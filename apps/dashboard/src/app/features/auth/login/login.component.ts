@@ -1,47 +1,69 @@
-import { Component, signal } from '@angular/core'
-import { FormsModule } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core'
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators,
+  type FormGroup,
+} from '@angular/forms'
 import { Router } from '@angular/router'
 import { AuthService } from '../../../core/auth.service'
 
 @Component({
   selector: 'app-login',
-  standalone: true,
-  imports: [FormsModule],
+  imports: [ReactiveFormsModule],
   template: `
     <div class="login-container">
       <h1>Login</h1>
-      <form (ngSubmit)="onSubmit()">
-        <label>
-          Email
-          <input type="email" [(ngModel)]="email" name="email" required />
-        </label>
-        <label>
-          Password
-          <input type="password" [(ngModel)]="password" name="password" required />
-        </label>
-        <button type="submit" [disabled]="loading()">Login</button>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <label for="login-email">Email</label>
+        <input
+          id="login-email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          required
+        />
+
+        <label for="login-password">Password</label>
+        <input
+          id="login-password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          required
+        />
+
+        <button type="submit" [disabled]="form.invalid || loading()">Login</button>
       </form>
       @if (error()) {
-        <p class="error">{{ error() }}</p>
+        <p class="error" role="alert">{{ error() }}</p>
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
-  email = ''
-  password = ''
+  private readonly fb = inject(FormBuilder)
+  private readonly auth = inject(AuthService)
+  private readonly router = inject(Router)
+
+  readonly form: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+  })
+
   readonly loading = signal(false)
   readonly error = signal<string | null>(null)
 
-  constructor(
-    private auth: AuthService,
-    private router: Router,
-  ) {}
-
   onSubmit(): void {
+    if (this.form.invalid) return
+
     this.loading.set(true)
     this.error.set(null)
-    this.auth.login(this.email, this.password).subscribe({
+
+    const { email, password } = this.form.value as { email: string; password: string }
+
+    this.auth.login(email, password).subscribe({
       next: () => {
         this.loading.set(false)
         void this.router.navigate(['/deploy'])

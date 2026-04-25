@@ -3,7 +3,10 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "turbo run back:dev front:dev",
+    "back:dev": "turbo run back:dev --filter=@wisp/core",
+    "front:dev": "turbo run front:dev --filter=@wisp/dashboard",
+    "start": "turbo run start",
     "lint": "turbo run lint",
     "format": "biome format --write .",
     "check-types": "turbo run check-types",
@@ -16,7 +19,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "turbo": "^2.9.6",
-    "typescript": "5.9.2"
+    "typescript": "~5.8.0"
   },
   "engines": {
     "bun": ">=1.0.0"

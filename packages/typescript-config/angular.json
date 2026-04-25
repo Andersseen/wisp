@@ -4,8 +4,6 @@
     "lib": ["es2022", "DOM", "DOM.Iterable"],
     "module": "es2022",
     "moduleResolution": "bundler",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "strictTemplates": true
+    "experimentalDecorators": true
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core'
+import { Injectable, inject, signal } from '@angular/core'
 import { ApiService } from './api.service'
 import { Observable, tap } from 'rxjs'
 
@@ -11,8 +11,7 @@ export interface User {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   readonly user = signal<User | null>(null)
-
-  constructor(private api: ApiService) {}
+  private readonly api = inject(ApiService)
 
   login(email: string, password: string): Observable<{ id: string; email: string }> {
     return this.api.post<{ id: string; email: string }>('/auth/login', { email, password }).pipe(

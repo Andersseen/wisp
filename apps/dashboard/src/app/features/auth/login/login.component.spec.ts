@@ -30,16 +30,16 @@ describe('LoginComponent', () => {
 
   it('should call auth service on submit', () => {
     authSpy.login.mockReturnValue(of({ id: '1', email: 'test@wisp.sh' }))
-    component.email = 'test@wisp.sh'
-    component.password = 'password'
+    component.form.get('email')?.setValue('test@wisp.sh')
+    component.form.get('password')?.setValue('password')
     component.onSubmit()
     expect(authSpy.login).toHaveBeenCalledWith('test@wisp.sh', 'password')
   })
 
   it('should set error on failed login', () => {
     authSpy.login.mockReturnValue(throwError(() => new Error('Invalid')))
-    component.email = 'test@wisp.sh'
-    component.password = 'password'
+    component.form.get('email')?.setValue('test@wisp.sh')
+    component.form.get('password')?.setValue('password')
     component.onSubmit()
     expect(component.error()).toBe('Invalid')
   })

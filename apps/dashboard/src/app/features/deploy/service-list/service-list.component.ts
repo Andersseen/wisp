@@ -1,4 +1,4 @@
-import { Component, signal, OnInit } from '@angular/core'
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core'
 import { RouterLink } from '@angular/router'
 import { ApiService } from '../../../core/api.service'
 
@@ -12,7 +12,6 @@ export interface Service {
 
 @Component({
   selector: 'app-service-list',
-  standalone: true,
   imports: [RouterLink],
   template: `
     <div class="service-list">
@@ -30,11 +29,11 @@ export interface Service {
       </ul>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ServiceListComponent implements OnInit {
   readonly services = signal<Service[]>([])
-
-  constructor(private api: ApiService) {}
+  private readonly api = inject(ApiService)
 
   ngOnInit(): void {
     this.api.get<Service[]>('/deploy').subscribe({

@@ -19,6 +19,6 @@
   "devDependencies": {
     "@wisp/typescript-config": "workspace:*",
     "drizzle-kit": "^0.30.0",
-    "typescript": "5.9.2"
+    "typescript": "~5.8.0"
   }
 }

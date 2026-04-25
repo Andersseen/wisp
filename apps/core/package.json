@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "back:dev": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun dist/index.js",
+    "dev": "bun --watch src/index.ts",
     "lint": "biome check .",
     "test": "bun test",
     "test:integration": "bun test tests/integration",
@@ -28,6 +29,6 @@
     "@wisp/typescript-config": "workspace:*",
     "@types/dockerode": "^3.3.37",
     "bun-types": "^1.2.0",
-    "typescript": "5.9.2"
+    "typescript": "~5.8.0"
   }
 }
