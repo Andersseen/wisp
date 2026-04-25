@@ -1,0 +1,8 @@
+{
+    auto_https off
+}
+
+:80 {
+    reverse_proxy /api/* core:3000
+    reverse_proxy /* dashboard:80
+}

@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  caddy:
+    image: caddy:2.9-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  core:
+    build:
+      context: ../..
+      dockerfile: apps/core/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: /data/sqlite.db
+      VALKEY_URL: redis://valkey:6379
+      DOCKER_SOCKET: /var/run/docker.sock
+      SESSION_SECRET: ${SESSION_SECRET}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - sqlite-data:/data
+    depends_on:
+      valkey:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: apps/dashboard/Dockerfile
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - core
+
+volumes:
+  valkey-data:
+  caddy-data:
+  caddy-config:
+  sqlite-data:
