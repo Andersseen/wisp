@@ -15,6 +15,7 @@
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "useDefineForClassFields": false,
     "strict": true,
     "target": "ES2022"
   }

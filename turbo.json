@@ -13,6 +13,8 @@
     "build": { "dependsOn": ["^build", "db:generate"], "outputs": ["dist/**"] },
     "back:dev": { "cache": false, "persistent": true },
     "front:dev": { "cache": false, "persistent": true },
+    "demo:dev": { "cache": false, "persistent": true },
+    "demo:build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
     "start": { "cache": false }
   }
 }
