@@ -16,7 +16,7 @@
     "@elysiajs/cors": "^1.2.0",
     "@node-rs/argon2": "^2.0.2",
     "@wisp/db": "workspace:*",
-    "bullmq": "^5.47.0",
+    "bullmq": "^5.79.3",
     "dockerode": "^4.0.5",
     "drizzle-orm": "^0.41.0",
     "elysia": "^1.2.0",
