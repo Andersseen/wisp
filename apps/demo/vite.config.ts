@@ -1,6 +1,6 @@
-import analog from '@analogjs/platform'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import analog from '@analogjs/platform'
 import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))

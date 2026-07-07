@@ -1,6 +1,6 @@
 import { type ApplicationConfig, provideZonelessChangeDetection } from '@angular/core'
 import { provideRouter, withComponentInputBinding } from '@angular/router'
-import { provideWispTheme, ThemeService } from '@wisp/ui'
+import { ThemeService, provideWispTheme } from '@wisp/ui'
 import { routes } from './app.routes'
 
 export const appConfig: ApplicationConfig = {

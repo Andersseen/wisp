@@ -1,7 +1,11 @@
 {
   "extends": "@wisp/typescript-config/angular.json",
   "compilerOptions": {
-    "outDir": "./dist/out-tsc"
+    "outDir": "./dist/out-tsc",
+    "baseUrl": "./",
+    "paths": {
+      "@wisp/ui": ["../../packages/ui/src/public-api.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
