@@ -28,5 +28,6 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "trustedDependencies": ["better-sqlite3"]
 }

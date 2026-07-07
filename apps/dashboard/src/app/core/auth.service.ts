@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core'
+import { type Observable, tap } from 'rxjs'
 import { ApiService } from './api.service'
-import { Observable, tap } from 'rxjs'
 
 export interface User {
   id: string
@@ -21,7 +21,11 @@ export class AuthService {
     )
   }
 
-  register(email: string, password: string, name?: string): Observable<{ id: string; email: string }> {
+  register(
+    email: string,
+    password: string,
+    name?: string,
+  ): Observable<{ id: string; email: string }> {
     return this.api.post<{ id: string; email: string }>('/auth/register', {
       email,
       hashedPassword: password,

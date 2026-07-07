@@ -1,20 +1,23 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-07-06.** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-07-07.** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
 The project is a **well-structured skeleton**. Monorepo, tooling, CI, DB schema, API shape, and dashboard shell all exist and compile. **No end-to-end flow works yet**: auth issues no sessions, so every authenticated route rejects; the entire build/deploy pipeline (git clone, docker build, compose up, Caddy routing, webhooks) is TODO stubs. Nothing here is "broken legacy" — it's unfinished on purpose. Build features in the priority order below.
 
+**Phase 0 is done**: `bun run lint`, `bun run check-types`, and `bun run test` all pass green across every package, and the local bootstrap (`.env`, install, docker dev infra, db generate/migrate/seed) works end to end. This required fixing not just the 3 catalogued bugs (#4, #7, #9) but a long tail of latent tooling gaps nobody had actually exercised before — see the changelog entry below for the full list.
+
 ## What works
 
-- Monorepo tooling: turbo tasks, Biome lint, `bun run check-types`, CI (lint/test/build/docker images).
-- DB package: schema for `users`/`services`/`jobs` with drizzle-zod contracts; client factory; drizzle-kit generate/migrate/seed wiring.
-- API boot & plumbing: Elysia app with cors, pino logger, typed-error handler, db/valkey/docker plugins; `/health` route.
+- Monorepo tooling: turbo tasks (lint, check-types, test all wired and green), Biome lint (repo-wide, `.angular` cache properly ignored), CI (lint/test/build/docker images).
+- DB package: schema for `users`/`services`/`jobs` with drizzle-zod contracts; client factory; drizzle-kit generate/migrate/seed wiring — verified working end to end (initial migration `0000_far_winter_soldier.sql` generated and applied).
+- API boot & plumbing: Elysia app with cors, pino logger, typed-error handler, db/valkey/docker plugins; `/health` route. Boots clean with `bun run back:dev` (needed `pino-pretty` added as a real dependency — was referenced but never installed).
+- Full dev stack reachable through Caddy: `http://localhost/api/health` → 200, `http://localhost/` → dashboard. Verified end-to-end (see trap #14 for the Caddyfile bugs this required fixing).
 - `AuthService.register/login`: argon2 hashing + credential check against SQLite (but see gap #2 — login returns no session).
-- `DeployService`: create (slug-conflict check) / listByUser / getById against SQLite.
+- `DeployService`: create (slug-conflict check) / listByUser / getById against SQLite; unauthenticated `POST /deploy` and `GET /deploy` now correctly return 401 (bug #4 fixed).
 - Dashboard shell: zoneless Angular 19, lazy auth+deploy routes, login/register/service-create forms (reactive), service list, logs placeholder, error interceptor.
-- Unit tests for AuthService & DeployService; integration test for auth routes; Playwright skeletons.
+- Tests: unit tests for AuthService & DeployService, integration tests for auth/deploy routes (apps/core, 8/8 passing); dashboard component unit test for LoginComponent now runs for real under `bun:test` (TestBed + happy-dom harness in `apps/dashboard/tests/setup.ts`, 3/3 passing); Playwright e2e skeletons correctly excluded from `bun test` (run only via `test:e2e`).
 
 ## Stubs (files that pretend to work but don't)
 
@@ -30,28 +33,38 @@ The project is a **well-structured skeleton**. Monorepo, tooling, CI, DB schema,
 
 ## Known bugs & traps (verify before "fixing" elsewhere)
 
-1. **Auth is the global blocker**: `authPlugin` always yields `user: null`, so `POST /deploy` and `GET /deploy` always throw. Nothing authenticated can be exercised end-to-end until spec 001 lands.
+1. **Auth is the global blocker**: `authPlugin` always yields `user: null`, so `POST /deploy` and `GET /deploy` always throw (as 401, correctly, since bug #4's fix). Nothing authenticated can be exercised end-to-end until spec 001 lands.
 2. **Login returns no credential**: `AuthService.login` returns `{ id, email }` only — there is no session/token to put in the `Authorization` header, and no `sessions` table in the schema (Lucia needs one).
 3. **Misleading field name**: the register API body field `hashedPassword` actually carries the *plaintext* password (hashed server-side in `auth.service.ts`); the dashboard maps `password → hashedPassword` when calling it. Rename to `password` when touching auth (spec 001).
-4. **Wrong error type in deploy routes**: `deploy.routes.ts` throws `new Error('UNAUTHORIZED')` → clients receive **500 INTERNAL_ERROR** instead of 401. Use `UnauthorizedError`.
+4. ~~Wrong error type in deploy routes~~ **Fixed 2026-07-07**: `deploy.routes.ts` now throws `UnauthorizedError`; integration test asserts 401 on both `POST /deploy` and `GET /deploy`.
 5. **No ownership check**: `GET /deploy/:id` has no auth at all — any caller can read any service.
 6. **Queue name mismatch / dead consumers**: `QueueService` produces only to queue `'build'`; `deploy.worker.ts` listens on `'deploy'` (no producer); **no worker is ever instantiated in `src/index.ts`**, so no job would be processed at all.
-7. **Duplicate worker implementations**: `queue/build.worker.ts` (factory) and `services/queue/worker.service.ts` (class) both consume `'build'` identically. Pick one (factory style is the documented convention) and delete the other when wiring workers.
-8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example`.
-9. **Formatter trap**: `biome.json` doesn't pin `quoteStyle`/`semicolons`, but the codebase is single-quote/no-semicolon. A repo-wide `bun run format` may rewrite everything to Biome defaults (double quotes + semicolons). Don't run it; format only touched files.
+7. ~~Duplicate worker implementations~~ **Fixed 2026-07-07**: deleted `services/queue/worker.service.ts` (the unused class); kept the `queue/*.worker.ts` factory-style convention.
+8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12).
+9. ~~Formatter trap~~ **Fixed 2026-07-07**: `biome.json` now pins `javascript.formatter.quoteStyle: "single"` and `semicolons: "asNeeded"`; `bun run lint` no longer wants to rewrite the whole repo to double-quotes/semicolons.
 10. **Dashboard auth is cosmetic**: no route guard on `/deploy`, no interceptor attaching `Authorization`, `AuthService.user` signal lost on refresh. All addressed in spec 001.
 11. **MinIO** runs in dev compose but nothing uses it yet — don't "clean it up"; it's reserved for build artifacts/logs.
+12. **`apps/core/.env` is a symlink to the root `.env`**, not a separate file — needed because Bun's automatic dotenv loading is per-cwd (doesn't walk up to the repo root), and `turbo` runs each package's scripts with that package's directory as cwd. If a fresh clone is missing it, recreate with `ln -s ../../.env apps/core/.env` (don't just copy — that'd create a second file to keep in sync).
+13. **`apps/core`'s production bundle is broken**: `bun run build` (`bun build src/index.ts --outdir dist --target bun`) fails — `dockerode`'s optional `ssh2`→`cpu-features` dependency does a native `require()` that Bun's bundler can't statically resolve. Not fixed (out of Phase 0 scope: `test` no longer depends on `build`, so this doesn't block lint/check-types/test). Needs an `--external` flag or equivalent before Phase 7 (production install) can work.
+14. **Caddyfile.dev/prod had three latent bugs**, only found by actually curling through Caddy (never verified before): (a) bare `reverse_proxy /api/*` doesn't strip the prefix — backend got `/api/health` and 404'd on its own `/health` route; fixed with `handle_path /api/* { reverse_proxy ... }` in both Caddyfiles. (b) dev only: bare `localhost` as the site address made Caddy bind only `:443`, never `:80`, even with `auto_https off` — fixed by writing `http://localhost` explicitly. (c) dev only: `ng serve` binds to loopback by default, unreachable from the Docker VM — fixed with `--host 0.0.0.0` on `front:dev`/`dev`. Do **not** add `extra_hosts: host.docker.internal:host-gateway` to `dev.yml` — Rancher Desktop/Docker Desktop already resolve `host.docker.internal` correctly to the real host; that extra_hosts entry shadows it with the Linux bridge-gateway IP and silently breaks host reachability.
 
-## Next priorities (ordered — do them as specs)
+## Next priorities
 
-1. **[001-auth-sessions](specs/001-auth-sessions.md)** — sessions table + Lucia validation + login/logout/me + dashboard guard/interceptor. Unblocks everything. *(spec: draft, awaiting owner approval)*
-2. **002 build pipeline** — real `BuildService` (git clone → `docker build` via dockerode), build worker wired in `index.ts`, `jobs` rows + log capture, service status transitions.
-3. **003 deploy + routing** — run built image (compose engine or dockerode), `CaddyEngine` against Caddy admin API, `deploy` queue producer, status → `running`.
-4. **004 logs & status in dashboard** — `GET /deploy/:id/jobs` + logs endpoint, wire `logs.component`, poll or SSE.
-5. **005 GitHub webhook** — HMAC signature verification, map repo→service, trigger rebuild.
+The full phased roadmap with design notes and ready-to-paste agent prompts lives in **[PLAN.md](PLAN.md)**. Current position:
+
+- **Phase 0 is done** (see changelog below for the full list of what got fixed beyond the original 3 bugs).
+- **Now → Phase 1** — [001-auth-sessions](specs/001-auth-sessions.md) *(spec drafted, awaiting owner approval)*. Unblocks everything.
+- Then phases 2–7: dashboard shell → build pipeline → run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
 
+- **2026-07-07** — Phase 0 completed. Fixed the 3 catalogued bugs (#4 UnauthorizedError, #7 duplicate worker, #9 formatter trap) plus a long tail of latent issues surfaced by actually running the documented gates for the first time:
+  - **Lint**: ~28 pre-existing Biome violations across ~20 files (import ordering, missing `import type`, unused params in stub engine files, over-width chains) — all fixed file-by-file (no repo-wide `--write`, per the formatter-trap lesson). `biome.json` now also ignores `.angular` (was linting Angular's build cache, 4780+ spurious diagnostics).
+  - **check-types**: `turbo.json` never declared a `check-types` task at all (script existed per-package but `bun run check-types` errored "missing task in project") — added. Then fixed real errors it surfaced: `packages/db` and `apps/core` tsconfigs had a `rootDir` that excluded their own migration-config/test files (TS6059); `apps/dashboard` and `packages/db` used Bun-specific APIs (`bun:test`, `bun:sqlite`, `process`) without `bun-types` installed/declared; `tests/setup.ts` used `Parameters<>` on a class instead of `ConstructorParameters<>`.
+  - **test**: `turbo.json` had `test: dependsOn: ["build"]` for no reason — neither package's test script touches build output (`packages/db` has zero tests; the one dashboard spec runs against source via Angular TestBed) — removed, which also sidesteps trap #13. Root cause of "SESSION_SECRET: Required" during tests: Bun's dotenv loading is per-cwd and `apps/core` had no `.env` of its own (see trap #12). `packages/db`'s migration tooling needed `better-sqlite3` (drizzle-kit's CLI needs its own Node SQLite driver, separate from the app's `bun:sqlite` runtime usage) plus `trustedDependencies` so Bun would run its native build. Dashboard's `bun test` was sweeping up Playwright e2e specs (scoped to `bun test src`) and had no Angular TestBed environment wired up at all — added `@happy-dom/global-registrator` + `bunfig.toml` preload + `tests/setup.ts` (zoneless `initTestEnvironment` + `resetTestingModule` between tests).
+  - **Bootstrap**: `.env` generated, `bun install`. `db:generate` failed on a stale untracked empty `migrations/meta/` scaffold dir — removed, regenerated clean (`0000_far_winter_soldier.sql`). `db:migrate` needed `better-sqlite3` installed (drizzle-kit's own CLI driver, distinct from the app's `bun:sqlite` runtime usage) plus `trustedDependencies` + a manual `bun run install` in its node_modules dir to get Bun to actually run its native build step. Backend wouldn't boot (`pino-pretty` referenced but never installed as a dependency) — added. Full stack then verified end-to-end through Caddy (`/api/health` → 200, `/` → dashboard) after fixing 3 Caddyfile bugs — see trap #14.
+  - **Environment note, not a repo bug**: verifying via `curl http://localhost/...` from the host machine hit an unrelated SSH tunnel already bound to port 80 in this sandbox; verification was done via `docker run --network container:docker-caddy-1 curl ...` instead. A real dev machine without that port-80 tunnel should just work with a plain host `curl`.
+- **2026-07-07** — Development plan added ([PLAN.md](PLAN.md)): 8 phases (0–7) to v1, with design notes per phase and hand-off prompts for the executing agent. AGENTS.md reading order updated. No product code changed.
 - **2026-07-06** — Docs kit created (AGENTS.md, CLAUDE.md, docs/*, specs/001 draft, .env.example). No product code changed. Full-project analysis done; bugs #1–#11 catalogued.
 
 ## How to maintain this file (for every agent)

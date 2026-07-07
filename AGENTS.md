@@ -6,9 +6,10 @@ Entry point for AI coding agents (and humans) working on this repo. The docs in 
 
 1. This file.
 2. [docs/STATE.md](docs/STATE.md) — what works, what is stubbed, known traps, next priorities. Refresh it at the end of every work session.
-3. The spec you are implementing in [docs/specs/](docs/specs/) — see [docs/SDD-WORKFLOW.md](docs/SDD-WORKFLOW.md) for the process.
-4. The sections of [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for the layer you touch (backend / frontend / db).
-5. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system map; [docs/CONTEXT.md](docs/CONTEXT.md) for why the project exists.
+3. [docs/PLAN.md](docs/PLAN.md) — the phased v1 roadmap; find the current phase and its design notes.
+4. The spec you are implementing in [docs/specs/](docs/specs/) — see [docs/SDD-WORKFLOW.md](docs/SDD-WORKFLOW.md) for the process.
+5. The sections of [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for the layer you touch (backend / frontend / db).
+6. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system map; [docs/CONTEXT.md](docs/CONTEXT.md) for why the project exists.
 
 ## What Wisp is (one line)
 

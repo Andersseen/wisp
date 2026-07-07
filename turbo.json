@@ -1,12 +1,14 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [".env"],
+  "envMode": "loose",
   "tasks": {
     "db:generate": { "cache": false },
     "db:migrate": { "dependsOn": ["db:generate"], "cache": false },
     "db:seed": { "dependsOn": ["db:migrate"], "cache": false },
     "lint": { "outputs": [] },
-    "test": { "dependsOn": ["build"], "outputs": ["coverage/**"] },
+    "check-types": { "outputs": [] },
+    "test": { "outputs": [] },
     "test:e2e": { "dependsOn": ["build"], "cache": false },
     "build": { "dependsOn": ["^build", "db:generate"], "outputs": ["dist/**"] },
     "back:dev": { "cache": false, "persistent": true },

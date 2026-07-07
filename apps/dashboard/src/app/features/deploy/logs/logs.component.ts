@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core'
+import { ChangeDetectionStrategy, Component, type OnInit, inject, signal } from '@angular/core'
 import { ActivatedRoute } from '@angular/router'
 import { ApiService } from '../../../core/api.service'
 

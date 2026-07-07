@@ -1,4 +1,4 @@
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http'
+import { HttpErrorResponse, type HttpInterceptorFn } from '@angular/common/http'
 import { catchError, throwError } from 'rxjs'
 
 export const errorHandlerInterceptor: HttpInterceptorFn = (req, next) => {

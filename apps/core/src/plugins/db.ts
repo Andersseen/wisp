@@ -1,5 +1,5 @@
-import { Elysia } from 'elysia'
 import { createDbClient } from '@wisp/db'
+import { Elysia } from 'elysia'
 import { config } from '../config'
 
 export type DatabaseClient = ReturnType<typeof createDbClient>

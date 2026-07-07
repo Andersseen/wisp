@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { databaseConfigSchema } from './database'
-import { valkeyConfigSchema } from './valkey'
 import { dockerConfigSchema } from './docker'
+import { valkeyConfigSchema } from './valkey'
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -16,9 +16,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env)
 
 if (!parsed.success) {
-  const formatted = parsed.error.issues
-    .map((i) => `${i.path.join('.')}: ${i.message}`)
-    .join('\n')
+  const formatted = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n')
   throw new Error(`Invalid environment variables:\n${formatted}`)
 }
 

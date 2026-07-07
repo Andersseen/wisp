@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'bun:test'
+import { beforeEach, describe, expect, it } from 'bun:test'
 import { AuthService } from '../../src/services/auth/auth.service'
 import { createMockDb } from '../setup'
 

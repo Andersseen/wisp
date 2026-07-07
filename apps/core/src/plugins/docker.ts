@@ -1,5 +1,5 @@
-import { Elysia } from 'elysia'
 import Dockerode from 'dockerode'
+import { Elysia } from 'elysia'
 import { config } from '../config'
 
 export const docker = new Dockerode({ socketPath: config.DOCKER_SOCKET })

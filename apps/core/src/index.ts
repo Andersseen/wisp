@@ -1,15 +1,15 @@
-import { Elysia } from 'elysia'
 import { cors } from '@elysiajs/cors'
+import { Elysia } from 'elysia'
+import { config } from './config'
 import { dbPlugin } from './plugins/db'
-import { valkeyPlugin } from './plugins/valkey'
 import { dockerPlugin } from './plugins/docker'
-import { loggerPlugin, logger } from './plugins/logger'
 import { errorHandlerPlugin } from './plugins/error-handler'
+import { logger, loggerPlugin } from './plugins/logger'
+import { valkeyPlugin } from './plugins/valkey'
 import { authRoutes } from './routes/auth.routes'
 import { deployRoutes } from './routes/deploy.routes'
-import { webhookRoutes } from './routes/webhook.routes'
 import { healthRoutes } from './routes/health.routes'
-import { config } from './config'
+import { webhookRoutes } from './routes/webhook.routes'
 
 const app = new Elysia()
   .use(cors())

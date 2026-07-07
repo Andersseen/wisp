@@ -1,21 +1,18 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { z } from 'zod'
+import type { z } from 'zod'
 import { services } from './services'
 
 export const jobs = sqliteTable('jobs', {
   id: text('id').primaryKey(),
   type: text('type', { enum: ['build', 'deploy'] }).notNull(),
-  status: text('status', { enum: ['pending', 'running', 'success', 'failed'] })
-    .default('pending'),
+  status: text('status', { enum: ['pending', 'running', 'success', 'failed'] }).default('pending'),
   serviceId: text('service_id')
     .notNull()
     .references(() => services.id),
   logOutput: text('log_output'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 })
 
 export const insertJobSchema = createInsertSchema(jobs).omit({

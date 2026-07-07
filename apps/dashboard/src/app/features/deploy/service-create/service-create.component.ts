@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core'
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-  type FormGroup,
-} from '@angular/forms'
+import { FormBuilder, type FormGroup, ReactiveFormsModule, Validators } from '@angular/forms'
 import { Router } from '@angular/router'
 import { ApiService } from '../../../core/api.service'
 
@@ -66,17 +61,15 @@ export class ServiceCreateComponent {
     this.loading.set(true)
     this.error.set(null)
 
-    this.api
-      .post<{ id: string }>('/deploy', this.form.value)
-      .subscribe({
-        next: () => {
-          this.loading.set(false)
-          void this.router.navigate(['/deploy'])
-        },
-        error: (err: unknown) => {
-          this.loading.set(false)
-          this.error.set(err instanceof Error ? err.message : 'Create failed')
-        },
-      })
+    this.api.post<{ id: string }>('/deploy', this.form.value).subscribe({
+      next: () => {
+        this.loading.set(false)
+        void this.router.navigate(['/deploy'])
+      },
+      error: (err: unknown) => {
+        this.loading.set(false)
+        this.error.set(err instanceof Error ? err.message : 'Create failed')
+      },
+    })
   }
 }

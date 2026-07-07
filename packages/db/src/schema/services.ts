@@ -1,6 +1,6 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { z } from 'zod'
+import type { z } from 'zod'
 import { users } from './users'
 
 export const services = sqliteTable('services', {
@@ -9,15 +9,14 @@ export const services = sqliteTable('services', {
   slug: text('slug').notNull().unique(),
   gitUrl: text('git_url').notNull(),
   branch: text('branch').default('main'),
-  status: text('status', { enum: ['pending', 'building', 'running', 'stopped', 'error'] })
-    .default('pending'),
+  status: text('status', {
+    enum: ['pending', 'building', 'running', 'stopped', 'error'],
+  }).default('pending'),
   userId: text('user_id')
     .notNull()
     .references(() => users.id),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 })
 
 export const insertServiceSchema = createInsertSchema(services).omit({

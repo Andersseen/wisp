@@ -4,6 +4,7 @@
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
     "baseUrl": "./",
+    "types": ["bun-types"],
     "paths": {
       "@app/*": ["src/app/*"]
     }

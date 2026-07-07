@@ -1,6 +1,6 @@
-import { ApplicationConfig, provideExperimentalZonelessChangeDetection } from '@angular/core'
-import { provideRouter } from '@angular/router'
 import { provideHttpClient, withInterceptors } from '@angular/common/http'
+import { type ApplicationConfig, provideExperimentalZonelessChangeDetection } from '@angular/core'
+import { provideRouter } from '@angular/router'
 import { routes } from './app.routes'
 import { errorHandlerInterceptor } from './core/error-handler.interceptor'
 
