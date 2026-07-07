@@ -1,7 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http'
 import { type ApplicationConfig, provideZonelessChangeDetection } from '@angular/core'
 import { provideRouter, withComponentInputBinding } from '@angular/router'
-import { provideVoltTheme } from '@voltui/components'
+import { provideWispTheme } from '@wisp/ui'
 import { provideMovement } from 'angular-movement'
 import { routes } from './app.routes'
 import { errorHandlerInterceptor } from './core/error-handler.interceptor'
@@ -11,7 +11,7 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([errorHandlerInterceptor])),
-    provideVoltTheme({ color: 'volt', style: 'soft' }),
+    provideWispTheme(),
     provideMovement({
       duration: 320,
       easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
