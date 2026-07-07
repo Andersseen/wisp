@@ -1,0 +1,6 @@
+export { CtaSectionComponent } from './cta-section.component'
+export { FeaturesSectionComponent } from './features-section.component'
+export { HeroSectionComponent } from './hero-section.component'
+export { InstallSectionComponent } from './install-section.component'
+export { StackSectionComponent } from './stack-section.component'
+export { StepsSectionComponent } from './steps-section.component'

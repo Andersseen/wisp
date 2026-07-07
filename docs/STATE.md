@@ -1,6 +1,6 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-07-07 (open-source hardening).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-07-07 (demo landing refresh).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
@@ -20,7 +20,7 @@ The project is a **well-structured skeleton**. Monorepo, tooling, CI, DB schema,
 - Tests: unit tests for AuthService & DeployService, integration tests for auth/deploy routes (apps/core, 8/8 passing); dashboard component unit test for LoginComponent now runs for real under `bun:test` (TestBed + happy-dom harness in `apps/dashboard/tests/setup.ts`, 3/3 passing); Playwright e2e skeletons correctly excluded from `bun test` (run only via `test:e2e`).
 - Open-source hardening kit shipped: MIT `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`, professional `README.md`, structured GitHub issue/PR templates, Dependabot config, branch protection policy (`.github/settings.yml`), and Husky + lint-staged + Commitlint hooks. CI now pins Bun `1.3.11`, runs `check-types`, and validates commit messages. `bun run build` is green after marking `cpu-features` as external in `apps/core`.
 - Shared UI library: `@wisp/ui` packages the SSR-safe `ThemeService`, `LogoComponent`, `GithubLinkComponent`, and `ShellComponent` using ng-packagr. The dashboard consumes it; the new `apps/demo` landing page also consumes it.
-- Demo landing page: `apps/demo` is an AnalogJS + Angular 21 + Tailwind 4 SPA with a hero, feature grid, and theme toggle. It builds and deploys to Cloudflare Pages via the `deploy-demo` CI job.
+- Demo landing page: `apps/demo` is an AnalogJS + Angular 21 + Tailwind 4 SPA with a hero, feature grid, install snippet, and theme toggle. Uses `@voltui/components`, `lumen-icons`, `angular-movement` (scroll/enter animations), and `quartz-headless` (copy-command overlay). It builds and deploys to Cloudflare Pages via the `deploy-demo` CI job.
 - Release automation: `.github/workflows/release.yml` + `semantic-release` create GitHub Releases and tags from conventional commits.
 
 ## Stubs (files that pretend to work but don't)
@@ -61,6 +61,8 @@ The full phased roadmap with design notes and ready-to-paste agent prompts lives
 - Then phases 3–7: build pipeline → run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-07-07 (demo landing refresh)** — Improved `apps/demo` landing page: added AnalogJS file-based routing so `index.page.ts` renders, wired `angular-movement` for enter/stagger/hover animations, and used `quartz-headless` overlay for the install-command copy button. Added `angular-movement`, `lumen-icons`, and `quartz-headless` as direct demo dependencies. Fixed missing styles by linking `/src/styles.css` in `index.html` (AnalogJS convention). Refactored the monolithic `index.page.ts` into small, focused presentational components under `components/landing/` (hero, stack, features, steps, install, CTA, plus reusable feature-card, step-card, copy-button). Added `demo:deploy:local` root script to build and serve the demo locally on port `8787`. `lint`, `check-types`, and `demo:build` all pass.
 
 - **2026-07-07 (CI fix)** — Fixed PR #10 CI failures: corrected Biome import ordering in `apps/demo`, added TypeScript path mapping so `dashboard`/`demo` resolve `@wisp/ui` from source during `check-types` without a prior build, and added a `SESSION_SECRET` environment variable to the CI `test` job so backend integration tests can boot.
 - **2026-07-07 (demo + CI/CD)** — Added `@wisp/ui` shared Angular library (ng-packagr), refactored dashboard to use it, created `apps/demo` AnalogJS landing page, and wired Cloudflare Pages deploy as the final CI stage. Added `.github/workflows/release.yml` with `semantic-release` for automated GitHub Releases. Aligned TypeScript to `~5.9.0` and pinned `ioredis` to `5.10.1` to avoid duplicate package resolution. Note: demo currently deploys as an SPA; full SSG prerender is blocked by an AnalogJS SSR renderer issue and is tracked as a follow-up.
