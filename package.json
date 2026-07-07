@@ -8,7 +8,8 @@
     "front:dev": "turbo run front:dev --filter=@wisp/dashboard",
     "demo:dev": "turbo run demo:dev --filter=@wisp/demo",
     "demo:build": "turbo run demo:build --filter=@wisp/demo",
-    "demo:deploy:local": "bun run demo:build && bunx serve apps/demo/dist/client -l 8787",
+    "demo:serve": "bun run demo:build && bunx serve apps/demo/dist/client -l 8787",
+    "demo:deploy": "bun run demo:build && wrangler pages deploy apps/demo/dist/client --project-name=wisp-demo --branch=main",
     "start": "turbo run start",
     "lint": "turbo run lint",
     "format": "biome format --write .",
@@ -34,7 +35,8 @@
     "semantic-release": "^24.2.0",
     "serve": "^14.2.4",
     "turbo": "^2.9.6",
-    "typescript": "~5.9.0"
+    "typescript": "~5.9.0",
+    "wrangler": "^4.0.0"
   },
   "engines": {
     "bun": ">=1.0.0"
