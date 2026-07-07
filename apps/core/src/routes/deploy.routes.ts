@@ -1,7 +1,8 @@
 import { Elysia, t } from 'elysia'
-import { DeployService } from '../services/deploy/deploy.service'
-import { dbPlugin } from '../plugins/db'
 import { authPlugin } from '../plugins/auth'
+import { dbPlugin } from '../plugins/db'
+import { DeployService } from '../services/deploy/deploy.service'
+import { UnauthorizedError } from '../types/error'
 
 export const deployRoutes = new Elysia({ prefix: '/deploy' })
   .use(dbPlugin)
@@ -10,7 +11,7 @@ export const deployRoutes = new Elysia({ prefix: '/deploy' })
     '/',
     async ({ body, db, user }) => {
       if (!user) {
-        throw new Error('UNAUTHORIZED')
+        throw new UnauthorizedError()
       }
       const service = new DeployService(db)
       return service.create({ ...body, userId: user.id })
@@ -26,7 +27,7 @@ export const deployRoutes = new Elysia({ prefix: '/deploy' })
   )
   .get('/', async ({ db, user }) => {
     if (!user) {
-      throw new Error('UNAUTHORIZED')
+      throw new UnauthorizedError()
     }
     const service = new DeployService(db)
     return service.listByUser(user.id)

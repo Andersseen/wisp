@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 
 // Integration tests should spin up the Elysia app and make HTTP requests.
 // For now, we verify the app module imports correctly.

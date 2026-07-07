@@ -6,13 +6,14 @@ Entry point for AI coding agents (and humans) working on this repo. The docs in 
 
 1. This file.
 2. [docs/STATE.md](docs/STATE.md) — what works, what is stubbed, known traps, next priorities. Refresh it at the end of every work session.
-3. The spec you are implementing in [docs/specs/](docs/specs/) — see [docs/SDD-WORKFLOW.md](docs/SDD-WORKFLOW.md) for the process.
-4. The sections of [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for the layer you touch (backend / frontend / db).
-5. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system map; [docs/CONTEXT.md](docs/CONTEXT.md) for why the project exists.
+3. [docs/PLAN.md](docs/PLAN.md) — the phased v1 roadmap; find the current phase and its design notes.
+4. The spec you are implementing in [docs/specs/](docs/specs/) — see [docs/SDD-WORKFLOW.md](docs/SDD-WORKFLOW.md) for the process.
+5. The sections of [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for the layer you touch (backend / frontend / db).
+6. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the system map; [docs/CONTEXT.md](docs/CONTEXT.md) for why the project exists.
 
 ## What Wisp is (one line)
 
-A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp builds it into a Docker container, runs it, and exposes it through Caddy — Elysia (Bun) API + Angular 19 dashboard + Drizzle/SQLite + BullMQ/Valkey.
+A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp builds it into a Docker container, runs it, and exposes it through Caddy — Elysia (Bun) API + Angular 21 dashboard + Drizzle/SQLite + BullMQ/Valkey.
 
 ## Golden rules
 
@@ -46,7 +47,7 @@ A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp
 
 ```
 apps/core/          Elysia API — routes → services → engines; plugins for db/valkey/docker/logger/errors
-apps/dashboard/     Angular 19 SPA — features/auth, features/deploy; core/ services + interceptor
+apps/dashboard/     Angular 21 SPA — features/auth, features/deploy; core/ services + interceptor
 packages/db/        Drizzle schema (users, services, jobs) + client + seed — single source of DB truth
 packages/typescript-config/  Shared tsconfigs (base, elysia, angular)
 infra/              docker compose (dev/prod), Caddyfiles, install script

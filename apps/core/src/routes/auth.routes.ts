@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
-import { AuthService } from '../services/auth/auth.service'
 import { dbPlugin } from '../plugins/db'
 import { loggerPlugin } from '../plugins/logger'
+import { AuthService } from '../services/auth/auth.service'
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
   .use(dbPlugin)

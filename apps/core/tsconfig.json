@@ -2,7 +2,6 @@
   "extends": "@wisp/typescript-config/elysia.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
       "@wisp/db": ["../../packages/db/src"]

@@ -22,7 +22,9 @@ export function createMockDb() {
     delete: mock(() => ({
       where: mock(() => Promise.resolve()),
     })),
-  } as unknown as Parameters<typeof import('../src/services/auth/auth.service').AuthService>[0]
+  } as unknown as ConstructorParameters<
+    typeof import('../src/services/auth/auth.service').AuthService
+  >[0]
 }
 
 export function createMockValkey() {

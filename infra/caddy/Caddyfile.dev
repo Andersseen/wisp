@@ -2,7 +2,9 @@
     auto_https off
 }
 
-localhost {
-    reverse_proxy /api/* localhost:3000
-    reverse_proxy /* localhost:4200
+http://localhost {
+    handle_path /api/* {
+        reverse_proxy host.docker.internal:3000
+    }
+    reverse_proxy /* host.docker.internal:4200
 }

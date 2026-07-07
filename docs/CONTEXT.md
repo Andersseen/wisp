@@ -52,7 +52,7 @@ Wisp is a **lightweight self-hosted PaaS for a single VPS**. You run Wisp on you
 | Queue | BullMQ on Valkey (Redis-compatible, via ioredis) |
 | Container control | dockerode against the host Docker socket |
 | Reverse proxy / TLS | Caddy (dynamic config via its API is the target) |
-| Frontend | Angular 19+, standalone, signals, zoneless |
+| Frontend | Angular 21, standalone, signals, zoneless, Tailwind CSS 4 + @voltui/components |
 | Lint/format | Biome |
 | Tests | `bun test` (backend), Playwright (e2e) |
 | Object storage (dev compose) | MinIO — reserved for build artifacts/log storage, not yet used |

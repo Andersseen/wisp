@@ -30,7 +30,21 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
+  },
   "files": {
-    "ignore": ["node_modules", "dist", ".turbo", "coverage", "playwright-report"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      ".turbo",
+      ".angular",
+      "coverage",
+      "playwright-report",
+      "migrations"
+    ]
   }
 }

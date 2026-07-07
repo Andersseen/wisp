@@ -1,6 +1,14 @@
-import { Routes } from '@angular/router'
+import type { Routes } from '@angular/router'
 
 export const authRoutes: Routes = [
-  { path: 'login', loadComponent: () => import('./login/login.component').then((m) => m.LoginComponent) },
-  { path: 'register', loadComponent: () => import('./register/register.component').then((m) => m.RegisterComponent) },
+  {
+    path: 'login',
+    title: 'Log in — Wisp',
+    loadComponent: () => import('./login/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    title: 'Sign up — Wisp',
+    loadComponent: () => import('./register/register.component').then((m) => m.RegisterComponent),
+  },
 ]
