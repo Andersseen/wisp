@@ -29,6 +29,15 @@ import { LmnRocketLaunchIcon } from 'lumen-icons/rocket-launch'
         "
       ></div>
 
+      <img
+        src="/assets/logo.svg"
+        alt="Wisp"
+        width="72"
+        height="72"
+        class="h-16 w-16 sm:h-20 sm:w-20"
+        loading="eager"
+      />
+
       <volt-badge variant="secondary" class="text-sm">
         <lmn-bolt [size]="14" tone="primary" class="mr-1" />
         Open-source self-hosted PaaS

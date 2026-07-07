@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <defs>
-    <linearGradient id="favicon-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+    <linearGradient id="wisp-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#3B61F6" />
       <stop offset="100%" stop-color="#5B45FF" />
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="8" fill="url(#favicon-gradient)" />
+  <rect width="32" height="32" rx="8" fill="url(#wisp-gradient)" />
   <path
     d="M17.2 5.4c.3-.7 1.3-.7 1.6 0l2.8 6.5h6.1c.8 0 1.1.9.5 1.4L19.3 22.5c-.5.5-1.3.2-1.4-.5l-1.2-6.5H9.4c-.7 0-1.1-.8-.6-1.4L17.2 5.4Z"
     fill="white"

@@ -44,7 +44,8 @@
       ".angular",
       "coverage",
       "playwright-report",
-      "migrations"
+      "migrations",
+      ".venv"
     ]
   }
 }
