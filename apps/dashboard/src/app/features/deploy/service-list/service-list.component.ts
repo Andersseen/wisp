@@ -21,7 +21,7 @@ export interface Service {
         @for (service of services(); track service.id) {
           <li>
             <a [routerLink]="[service.id, 'logs']">{{ service.name }}</a>
-            <span>{{ service.status }}</span>
+            <span [class]="'badge badge-' + service.status">{{ service.status }}</span>
           </li>
         } @empty {
           <li>No services yet.</li>
