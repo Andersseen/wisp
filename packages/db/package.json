@@ -17,6 +17,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@node-rs/argon2": "^2.0.2",
     "@wisp/typescript-config": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "bun-types": "^1.2.0",

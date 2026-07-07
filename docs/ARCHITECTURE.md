@@ -27,7 +27,7 @@ Prod (`infra/docker/prod.yml`): same shape, but core + dashboard run as containe
 | Path | Package | Role |
 |---|---|---|
 | `apps/core` | `@wisp/core` | Elysia API + queue workers + engines |
-| `apps/dashboard` | `@wisp/dashboard` | Angular 19 SPA |
+| `apps/dashboard` | `@wisp/dashboard` | Angular 21 SPA |
 | `packages/db` | `@wisp/db` | Drizzle schema, client factory, seed, migrations |
 | `packages/typescript-config` | `@wisp/typescript-config` | Shared tsconfigs (`base`, `elysia`, `angular`) |
 | `infra` | — | compose files, Caddyfiles, install script |

@@ -3,12 +3,15 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
 GlobalRegistrator.register()
 
+// JIT compiler must load before the testing platform so TestBed can compile templates
+await import('@angular/compiler')
+
 const { getTestBed } = await import('@angular/core/testing')
-const { BrowserDynamicTestingModule, platformBrowserDynamicTesting } = await import(
-  '@angular/platform-browser-dynamic/testing'
+const { BrowserTestingModule, platformBrowserTesting } = await import(
+  '@angular/platform-browser/testing'
 )
 
-getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting())
+getTestBed().initTestEnvironment(BrowserTestingModule, platformBrowserTesting())
 
 afterEach(() => {
   getTestBed().resetTestingModule()

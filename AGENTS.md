@@ -13,7 +13,7 @@ Entry point for AI coding agents (and humans) working on this repo. The docs in 
 
 ## What Wisp is (one line)
 
-A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp builds it into a Docker container, runs it, and exposes it through Caddy — Elysia (Bun) API + Angular 19 dashboard + Drizzle/SQLite + BullMQ/Valkey.
+A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp builds it into a Docker container, runs it, and exposes it through Caddy — Elysia (Bun) API + Angular 21 dashboard + Drizzle/SQLite + BullMQ/Valkey.
 
 ## Golden rules
 
@@ -47,7 +47,7 @@ A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp
 
 ```
 apps/core/          Elysia API — routes → services → engines; plugins for db/valkey/docker/logger/errors
-apps/dashboard/     Angular 19 SPA — features/auth, features/deploy; core/ services + interceptor
+apps/dashboard/     Angular 21 SPA — features/auth, features/deploy; core/ services + interceptor
 packages/db/        Drizzle schema (users, services, jobs) + client + seed — single source of DB truth
 packages/typescript-config/  Shared tsconfigs (base, elysia, angular)
 infra/              docker compose (dev/prod), Caddyfiles, install script

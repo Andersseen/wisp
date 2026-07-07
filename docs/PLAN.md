@@ -63,27 +63,21 @@ scope. Update the spec checkboxes and docs/STATE.md when done.
 
 ---
 
-## Phase 2 — Dashboard shell (the web base)
+## Phase 2 — Dashboard shell (the web base) — **DONE 2026-07-07 (owner-directed, superseded the original design)**
 
-**Goal:** turn the bare component set into an actual web app frame, so every later feature has a consistent home. **No component library, no CSS framework** — plain CSS with custom properties (design tokens), keeping the lightweight principle.
+**Goal (original):** turn the bare component set into an actual web app frame. The original premise was "no component library, no CSS framework"; the owner overrode it on 2026-07-07: the shell was built with the owner's own libraries instead, on Angular 21 + Tailwind CSS 4.
 
-**Design notes for spec 002 (agent drafts the spec from this)**
-- App shell in `app.component.ts`: header (Wisp logo/name, nav to Services, user email + logout button when authenticated) + `<main>` content area + minimal footer.
-- Global stylesheet `src/styles.css`: design tokens (`--color-*`, `--space-*`, `--radius`, font stack), base form/button/link styles so existing login/register/create forms look coherent without per-component duplication.
-- Status badge styling convention for service states (`pending|building|running|stopped|error`) — will be reused in phases 3–5.
-- Route titles via Angular `title` on routes; 404 wildcard route with a simple not-found component.
-- Nav reflects auth state from `AuthService.user` signal (depends on phase 1).
-- E2E smoke: shell renders, nav works, logout returns to login.
-- Non-goals: theming/dark mode, i18n, responsive polish beyond "usable on mobile width", animations.
+**What was actually built** (no spec — direct owner instruction in-session):
+- Stack: Angular 21.2 (zoneless, `provideZonelessChangeDetection`), Tailwind CSS 4 (`@tailwindcss/postcss` + `.postcssrc.json`), `@voltui/components` 0.6 (theme `volt`/`soft` + card/button/input/form-field/badge/skeleton), `lumen-icons` 0.2, `angular-movement` 0.5 (page-enter animations), `quartz-headless` 0.0.3 (virtual-scroll in the log viewer).
+- App shell in `app.component.ts`: sticky blur header (brand, Services nav, theme toggle, user email + logout), `<main>` container, footer. Dark mode via `ThemeService` (signal + localStorage + `applyVoltTheme`).
+- Auth pages: card-based login/register with volt form-field/label/input/error/hint, inline validation, loading spinners, error alerts.
+- Services: page header + New service button, skeleton loading state, dashed-border empty state with CTA, service cards with status badges (`running→solid, building/pending→secondary, stopped→outline, error→destructive`).
+- Create service: card form with hints and per-field validation errors, Cancel/Create actions.
+- Logs: terminal-style dark panel with line numbers, virtualized with quartz `qzVirtualScroll` (placeholder content until phase 3 provides real logs); `:id` bound via `withComponentInputBinding`.
+- Route `title`s on all routes; wildcard 404 (`not-found.component.ts`).
+- Original phase-2 non-goal "no dark mode" also superseded — dark mode shipped.
 
-**Exit gate:** dashboard visually coherent (shell + styled forms + list), e2e smoke green, no Biome/type errors.
-
-**Prompt to start this phase**
-```
-Read AGENTS.md, docs/STATE.md, docs/SDD-WORKFLOW.md and docs/PLAN.md (Phase 2).
-Draft docs/specs/002-dashboard-shell.md from the Phase 2 design notes using
-docs/specs/_TEMPLATE.md, then STOP and ask for owner approval before implementing.
-```
+**Exit gate (met):** lint/check-types/test green (Angular 21 TestBed harness migrated to `@angular/platform-browser/testing`), production build 457 kB initial (110 kB transfer), full visual pass in headless Chromium (light + dark).
 
 ---
 

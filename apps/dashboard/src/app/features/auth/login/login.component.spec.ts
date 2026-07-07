@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
-import { Component, provideExperimentalZonelessChangeDetection } from '@angular/core'
+import { Component, provideZonelessChangeDetection } from '@angular/core'
 import { type ComponentFixture, TestBed } from '@angular/core/testing'
 import { provideRouter } from '@angular/router'
 import { of, throwError } from 'rxjs'
@@ -19,7 +19,7 @@ describe('LoginComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
-        provideExperimentalZonelessChangeDetection(),
+        provideZonelessChangeDetection(),
         provideRouter([{ path: 'deploy', component: StubDeployComponent }]),
         { provide: AuthService, useValue: authSpy },
       ],
