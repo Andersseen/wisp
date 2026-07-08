@@ -49,3 +49,7 @@ yarn-error.log*
 
 # Python virtual environments
 .venv
+
+# Playwright
+playwright-report
+test-results

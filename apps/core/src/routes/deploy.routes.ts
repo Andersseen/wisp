@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { authPlugin } from '../plugins/auth'
 import { dbPlugin } from '../plugins/db'
 import { DeployService } from '../services/deploy/deploy.service'
-import { UnauthorizedError } from '../types/error'
+import { ForbiddenError, UnauthorizedError } from '../types/error'
 
 export const deployRoutes = new Elysia({ prefix: '/deploy' })
   .use(dbPlugin)
@@ -32,7 +32,14 @@ export const deployRoutes = new Elysia({ prefix: '/deploy' })
     const service = new DeployService(db)
     return service.listByUser(user.id)
   })
-  .get('/:id', async ({ params, db }) => {
+  .get('/:id', async ({ params, db, user }) => {
+    if (!user) {
+      throw new UnauthorizedError()
+    }
     const service = new DeployService(db)
-    return service.getById(params.id)
+    const deployment = await service.getById(params.id)
+    if (deployment.userId !== user.id) {
+      throw new ForbiddenError('Service does not belong to user')
+    }
+    return deployment
   })

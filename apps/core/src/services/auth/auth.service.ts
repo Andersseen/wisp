@@ -1,14 +1,22 @@
-import { hash, verify } from '@node-rs/argon2'
-import { type InsertUser, users } from '@wisp/db'
+import { users } from '@wisp/db'
 import { eq } from 'drizzle-orm'
 import { generateId } from 'lucia'
 import type { DatabaseClient } from '../../plugins/db'
 import { ConflictError, UnauthorizedError } from '../../types/error'
+import { PasswordService } from './password.service'
+
+export interface RegisterInput {
+  email: string
+  password: string
+  name?: string
+}
 
 export class AuthService {
+  private readonly passwordService = new PasswordService()
+
   constructor(private db: DatabaseClient) {}
 
-  async register(data: InsertUser): Promise<{ id: string; email: string }> {
+  async register(data: RegisterInput): Promise<{ id: string; email: string }> {
     const existing = await this.db.select().from(users).where(eq(users.email, data.email)).get()
 
     if (existing) {
@@ -16,7 +24,7 @@ export class AuthService {
     }
 
     const id = generateId(15)
-    const hashedPassword = await hash(data.hashedPassword)
+    const hashedPassword = await this.passwordService.hash(data.password)
 
     await this.db.insert(users).values({
       id,
@@ -35,7 +43,7 @@ export class AuthService {
       throw new UnauthorizedError('Invalid credentials')
     }
 
-    const valid = await verify(user.hashedPassword, password)
+    const valid = await this.passwordService.verify(user.hashedPassword, password)
     if (!valid) {
       throw new UnauthorizedError('Invalid credentials')
     }

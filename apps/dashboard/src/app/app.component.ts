@@ -24,7 +24,7 @@ import { AuthService } from './core/auth.service'
 
       <div actions class="flex items-center gap-2">
         @if (auth.user(); as user) {
-          <span class="hidden text-sm text-muted-foreground sm:inline">{{ user.email }}</span>
+          <span data-testid="user-email" class="hidden text-sm text-muted-foreground sm:inline">{{ user.email }}</span>
           <volt-button variant="ghost" size="icon" (click)="logout()">
             <lmn-arrow-right-on-rectangle [size]="16" ariaLabel="Log out" />
           </volt-button>

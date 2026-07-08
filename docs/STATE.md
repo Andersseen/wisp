@@ -1,33 +1,30 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-07-07 (demo landing refresh).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-07-08 (auth sessions shipped).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
-The project is a **well-structured skeleton**. Monorepo, tooling, CI, DB schema, API shape, and dashboard shell all exist and compile. **No end-to-end flow works yet**: auth issues no sessions, so every authenticated route rejects; the entire build/deploy pipeline (git clone, docker build, compose up, Caddy routing, webhooks) is TODO stubs. Nothing here is "broken legacy" — it's unfinished on purpose. Build features in the priority order below.
+The project is a **well-structured skeleton with working auth sessions**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **The build/deploy pipeline (git clone, docker build, compose up, Caddy routing, webhooks) is still TODO stubs.** Build features in the priority order below.
 
-**Phase 0 is done**: `bun run lint`, `bun run check-types`, and `bun run test` all pass green across every package, and the local bootstrap (`.env`, install, docker dev infra, db generate/migrate/seed) works end to end. This required fixing not just the 3 catalogued bugs (#4, #7, #9) but a long tail of latent tooling gaps nobody had actually exercised before — see the changelog entry below for the full list.
+**Phase 0 and Phase 1 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth now issues real session cookies, protected routes enforce ownership, and the dashboard persists sessions across reloads.
 
 ## What works
 
-- Monorepo tooling: turbo tasks (lint, check-types, test all wired and green), Biome lint (repo-wide, `.angular` cache properly ignored), CI (lint/test/build/docker images).
-- DB package: schema for `users`/`services`/`jobs` with drizzle-zod contracts; client factory; drizzle-kit generate/migrate/seed wiring — verified working end to end (initial migration `0000_far_winter_soldier.sql` generated and applied). **`db:seed` creates a real, log-in-able demo user: `demo@wisp.sh` / `demo1234`** (idempotent — deletes+reinserts with a real argon2 hash; the old `'seed-only'` fake hash never verified).
-- API boot & plumbing: Elysia app with cors, pino logger, typed-error handler, db/valkey/docker plugins; `/health` route. Boots clean with `bun run back:dev` (needed `pino-pretty` added as a real dependency — was referenced but never installed).
-- Full dev stack reachable through Caddy: `http://localhost/api/health` → 200, `http://localhost/` → dashboard. Verified end-to-end (see trap #14 for the Caddyfile bugs this required fixing).
-- `AuthService.register/login`: argon2 hashing + credential check against SQLite (but see gap #2 — login returns no session).
-- `DeployService`: create (slug-conflict check) / listByUser / getById against SQLite; unauthenticated `POST /deploy` and `GET /deploy` now correctly return 401 (bug #4 fixed).
-- Dashboard: **Angular 21 (zoneless) + Tailwind CSS 4 + owner's own UI stack** — `@voltui/components` (cards, buttons, form fields, badges, skeletons; theme `volt`/`soft`), `lumen-icons`, `angular-movement` (page-enter animations), `quartz-headless` (virtualized log viewer). App shell with sticky header, auth-aware nav, dark-mode toggle (`ThemeService` + localStorage); card-based login/register with inline validation; services page with skeleton/empty/list states and status badges; create-service form with hints; terminal-style logs page; route titles + 404. Production build 457 kB initial / 110 kB transfer.
-- Tests: unit tests for AuthService & DeployService, integration tests for auth/deploy routes (apps/core, 8/8 passing); dashboard component unit test for LoginComponent now runs for real under `bun:test` (TestBed + happy-dom harness in `apps/dashboard/tests/setup.ts`, 3/3 passing); Playwright e2e skeletons correctly excluded from `bun test` (run only via `test:e2e`).
-- Open-source hardening kit shipped: MIT `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`, professional `README.md`, structured GitHub issue/PR templates, Dependabot config, branch protection policy (`.github/settings.yml`), and Husky + lint-staged + Commitlint hooks. CI now pins Bun `1.3.11`, runs `check-types`, and validates commit messages. `bun run build` is green after marking `cpu-features` as external in `apps/core`.
-- Shared UI library: `@wisp/ui` packages the SSR-safe `ThemeService`, `LogoComponent`, `GithubLinkComponent`, and `ShellComponent` using ng-packagr. The dashboard consumes it; the new `apps/demo` landing page also consumes it.
-- Demo landing page: `apps/demo` is an AnalogJS + Angular 21 + Tailwind 4 SPA with a hero, feature grid, install snippet, and theme toggle. Uses `@voltui/components`, `lumen-icons`, `angular-movement` (scroll/enter animations), and `quartz-headless` (copy-command overlay). Includes SEO meta tags, Open Graph/Twitter cards, JSON-LD structured data, `robots.txt`, and `sitemap.xml`. It builds and deploys to Cloudflare Pages via the `deploy-demo` CI job.
-- Release automation: `.github/workflows/release.yml` + `semantic-release` create GitHub Releases and tags from conventional commits.
+- Monorepo tooling: turbo tasks (lint, check-types, test, build all wired and green), Biome lint (repo-wide, `.angular` and `test-results` cache properly ignored), CI (lint/test/build/docker images).
+- DB package: schema for `users`/`services`/`jobs`/`sessions` with drizzle-zod contracts; client factory; drizzle-kit generate/migrate/seed wiring — verified working end to end (migrations `0000_far_winter_soldier.sql` and `0001_bouncy_gabe_jones.sql` generated and applied). **`db:seed` creates a real, log-in-able demo user: `demo@wisp.sh` / `demo1234`**.
+- API boot & plumbing: Elysia app with cors, pino logger, typed-error handler, db/valkey/docker plugins; `/health` route. Boots clean with `bun run back:dev`.
+- Full dev stack reachable through Caddy: `http://localhost/api/health` → 200, `http://localhost/` → dashboard. Verified end-to-end.
+- **Auth sessions**: `POST /auth/login` issues an `HttpOnly` session cookie; `GET /auth/me` returns the current user; `POST /auth/logout` invalidates the session. `AuthService` uses `PasswordService` and the register body now accepts `password` (not `hashedPassword`).
+- **Protected deploy routes**: `POST /deploy`, `GET /deploy`, and `GET /deploy/:id` all require an active session; `GET /deploy/:id` checks ownership and returns 403 for other users' services.
+- Dashboard: **Angular 21 (zoneless) + Tailwind CSS 4 + owner's own UI stack** — `@voltui/components`, `lumen-icons`, `angular-movement`, `quartz-headless`. App shell with sticky header, auth-aware nav, dark-mode toggle; card-based login/register; services list with skeleton/empty/badges; create-service form; terminal-style logs page; route titles + 404. Production build ~464 kB initial / ~112 kB transfer.
+- Dashboard auth wiring: `AuthService.fetchMe()` restores the session on app boot; `ApiService` sends credentials; `authInterceptor` redirects to `/auth/login` on 401 (without looping on logout/auth-check); `authGuard` protects `/deploy`; the header shows the logged-in user's email and logout works.
+- Tests: backend unit + integration tests for auth and deploy (15/15 passing in `apps/core`); dashboard `AuthService` unit tests + `LoginComponent` tests (8/8 passing in `apps/dashboard`); Playwright e2e auth/deploy tests pass on Chromium (Firefox/WebKit require `npx playwright install`).
+- Open-source hardening kit, shared `@wisp/ui` library, demo landing page, and release automation all remain in place and green.
 
 ## Stubs (files that pretend to work but don't)
 
 | File | Reality |
 |---|---|
-| `apps/core/src/plugins/auth.ts` | Always returns `user: null` — Lucia session validation is TODO |
 | `apps/core/src/services/deploy/build.service.ts` | Returns fake success; no git clone, no docker build |
 | `apps/core/src/engine/docker-compose.engine.ts` | `up`/`down` throw `Not implemented` |
 | `apps/core/src/engine/caddy.engine.ts` | `addRoute`/`removeRoute` throw `Not implemented` |
@@ -37,30 +34,34 @@ The project is a **well-structured skeleton**. Monorepo, tooling, CI, DB schema,
 
 ## Known bugs & traps (verify before "fixing" elsewhere)
 
-1. **Auth is the global blocker**: `authPlugin` always yields `user: null`, so `POST /deploy` and `GET /deploy` always throw (as 401, correctly, since bug #4's fix). Nothing authenticated can be exercised end-to-end until spec 001 lands.
-2. **Login returns no credential**: `AuthService.login` returns `{ id, email }` only — there is no session/token to put in the `Authorization` header, and no `sessions` table in the schema (Lucia needs one).
-3. **Misleading field name**: the register API body field `hashedPassword` actually carries the *plaintext* password (hashed server-side in `auth.service.ts`); the dashboard maps `password → hashedPassword` when calling it. Rename to `password` when touching auth (spec 001).
-4. ~~Wrong error type in deploy routes~~ **Fixed 2026-07-07**: `deploy.routes.ts` now throws `UnauthorizedError`; integration test asserts 401 on both `POST /deploy` and `GET /deploy`.
-5. **No ownership check**: `GET /deploy/:id` has no auth at all — any caller can read any service.
+1. ~~Auth is the global blocker~~ **Fixed 2026-07-08**: `authPlugin` validates session cookies against the `sessions` table and exposes the user in Elysia context.
+2. ~~Login returns no credential~~ **Fixed 2026-07-08**: login sets an `HttpOnly` `sessionId` cookie; dashboard sends it automatically via `withCredentials: true`.
+3. ~~Misleading field name~~ **Fixed 2026-07-08**: register API body uses `password`; `hashedPassword` is no longer accepted.
+4. ~~Wrong error type in deploy routes~~ **Fixed 2026-07-07**: `deploy.routes.ts` throws `UnauthorizedError`; integration test asserts 401 on both `POST /deploy` and `GET /deploy`.
+5. ~~No ownership check~~ **Fixed 2026-07-08**: `GET /deploy/:id` is auth-protected and returns 403 if the service does not belong to the current user.
 6. **Queue name mismatch / dead consumers**: `QueueService` produces only to queue `'build'`; `deploy.worker.ts` listens on `'deploy'` (no producer); **no worker is ever instantiated in `src/index.ts`**, so no job would be processed at all.
 7. ~~Duplicate worker implementations~~ **Fixed 2026-07-07**: deleted `services/queue/worker.service.ts` (the unused class); kept the `queue/*.worker.ts` factory-style convention.
-8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12).
-9. ~~Formatter trap~~ **Fixed 2026-07-07**: `biome.json` now pins `javascript.formatter.quoteStyle: "single"` and `semicolons: "asNeeded"`; `bun run lint` no longer wants to rewrite the whole repo to double-quotes/semicolons.
-10. **Dashboard auth is cosmetic**: no route guard on `/deploy`, no interceptor attaching `Authorization`, `AuthService.user` signal lost on refresh. All addressed in spec 001.
+8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12). New env vars `SESSION_COOKIE_NAME` and `SESSION_MAX_AGE_MS` have sensible defaults.
+9. ~~Formatter trap~~ **Fixed 2026-07-07**: `biome.json` pins `javascript.formatter.quoteStyle: "single"` and `semicolons: "asNeeded"`; `bun run lint` no longer wants to rewrite the whole repo.
+10. ~~Dashboard auth is cosmetic~~ **Fixed 2026-07-08**: `/deploy` has `authGuard`; `AuthService.user` is restored on reload via `APP_INITIALIZER` + `GET /auth/me`; logout calls the API and clears state.
 11. **MinIO** runs in dev compose but nothing uses it yet — don't "clean it up"; it's reserved for build artifacts/logs.
-12. **`apps/core/.env` is a symlink to the root `.env`**, not a separate file — needed because Bun's automatic dotenv loading is per-cwd (doesn't walk up to the repo root), and `turbo` runs each package's scripts with that package's directory as cwd. If a fresh clone is missing it, recreate with `ln -s ../../.env apps/core/.env` (don't just copy — that'd create a second file to keep in sync).
-13. ~~`apps/core`'s production bundle is broken~~ **Fixed 2026-07-07**: `apps/core` build script now passes `--external cpu-features`, so `bun run build` is green and the CI `build` job can be required.
-14. **Caddyfile.dev/prod had three latent bugs**, only found by actually curling through Caddy (never verified before): (a) bare `reverse_proxy /api/*` doesn't strip the prefix — backend got `/api/health` and 404'd on its own `/health` route; fixed with `handle_path /api/* { reverse_proxy ... }` in both Caddyfiles. (b) dev only: bare `localhost` as the site address made Caddy bind only `:443`, never `:80`, even with `auto_https off` — fixed by writing `http://localhost` explicitly. (c) dev only: `ng serve` binds to loopback by default, unreachable from the Docker VM — fixed with `--host 0.0.0.0` on `front:dev`/`dev`. Do **not** add `extra_hosts: host.docker.internal:host-gateway` to `dev.yml` — Rancher Desktop/Docker Desktop already resolve `host.docker.internal` correctly to the real host; that extra_hosts entry shadows it with the Linux bridge-gateway IP and silently breaks host reachability.
+12. **`apps/core/.env` is a symlink to the root `.env`**, not a separate file — needed because Bun's automatic dotenv loading is per-cwd (doesn't walk up to the repo root), and `turbo` runs each package's scripts with that package's directory as cwd. If a fresh clone is missing it, recreate with `ln -s ../../.env apps/core/.env`.
+13. ~~`apps/core`'s production bundle is broken~~ **Fixed 2026-07-07**: `apps/core` build script passes `--external cpu-features`, so `bun run build` is green.
+14. **Caddyfile.dev/prod had three latent bugs**, only found by actually curling through Caddy (never verified before): (a) bare `reverse_proxy /api/*` doesn't strip the prefix — backend got `/api/health` and 404'd on its own `/health` route; fixed with `handle_path /api/* { reverse_proxy ... }` in both Caddyfiles. (b) dev only: bare `localhost` as the site address made Caddy bind only `:443`, never `:80`, even with `auto_https off` — fixed by writing `http://localhost` explicitly. (c) dev only: `ng serve` binds to loopback by default, unreachable from the Docker VM — fixed with `--host 0.0.0.0` on `front:dev`/`dev`. Do **not** add `extra_hosts: host.docker.internal:host-gateway` to `dev.yml`.
+15. **Playwright e2e needs browser binaries**: `bun run test:e2e` passes on Chromium locally; Firefox/WebKit fail with "Executable doesn't exist" until `npx playwright install` is run. CI currently does not run e2e.
 
 ## Next priorities
 
 The full phased roadmap with design notes and ready-to-paste agent prompts lives in **[PLAN.md](PLAN.md)**. Current position:
 
-- **Phase 0 done**; **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs — see PLAN.md Phase 2 for what shipped).
-- **Now → Phase 1** — [001-auth-sessions](specs/001-auth-sessions.md) *(spec drafted, awaiting owner approval)*. Unblocks everything — the UI is ready and waiting for real sessions.
-- Then phases 3–7: build pipeline → run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
+- **Phase 0 done**; **Phase 1 done** — [001-auth-sessions](specs/001-auth-sessions.md) implemented and verified. Auth is no longer a blocker.
+- **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs — see PLAN.md Phase 2 for what shipped).
+- **Now → Phase 3** — build pipeline (clone → docker build → jobs). Draft [003-build-pipeline](specs/003-build-pipeline.md) from PLAN.md Phase 3 design notes, get owner approval, then implement.
+- Then phases 4–7: run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-07-08 (auth sessions — spec 001 done)** — Implemented Phase 1 auth sessions. Added `sessions` table and Drizzle migration `0001_bouncy_gabe_jones.sql`. Backend: `SessionService` with opaque tokens; `authPlugin` validates cookies; `POST /auth/login` sets `HttpOnly` cookie, `POST /auth/logout` invalidates it, `GET /auth/me` returns user; register body renamed from `hashedPassword` to `password`; `AuthService` now uses `PasswordService`; added `ForbiddenError`; `GET /deploy/:id` enforces ownership. Frontend: `ApiService` sends `withCredentials`; `AuthService.fetchMe()` restores session on boot; `authInterceptor` redirects on 401 without looping; `authGuard` protects `/deploy`; header shows user email and logout works. Added config vars `SESSION_COOKIE_NAME` / `SESSION_MAX_AGE_MS`. Added backend integration tests (login cookie, /me, logout, deploy ownership) and dashboard `AuthService` unit tests; updated Playwright e2e to cover login persistence and protected-route redirect. All gates green: `lint`, `check-types`, `test`, `build`. Chromium e2e passes; Firefox/WebKit need `npx playwright install`.
 
 - **2026-07-07 (demo landing refresh)** — Improved `apps/demo` landing page: added AnalogJS file-based routing so `index.page.ts` renders, wired `angular-movement` for enter/stagger/hover animations, and used `quartz-headless` overlay for the install-command copy button. Added `angular-movement`, `lumen-icons`, and `quartz-headless` as direct demo dependencies. Fixed missing styles by linking `/src/styles.css` in `index.html` (AnalogJS convention). Refactored the monolithic `index.page.ts` into small, focused presentational components under `components/landing/` (hero, stack, features, steps, install, CTA, plus reusable feature-card, step-card, copy-button). Added `demo:serve` root script to build and serve the demo locally on port `8787`, and `demo:deploy` to deploy `apps/demo/dist/client` to Cloudflare Pages (`wisp-demo`) via Wrangler from local. Added project logo/favicon (`logo.svg`, `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`) and Open Graph image, plus SEO meta tags, JSON-LD, `robots.txt`, and `sitemap.xml`. `lint`, `check-types`, and `demo:build` all pass.
 

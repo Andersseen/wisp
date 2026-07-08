@@ -11,6 +11,8 @@ const envSchema = z.object({
   VALKEY_URL: z.string().default('redis://localhost:6379'),
   DOCKER_SOCKET: z.string().default('/var/run/docker.sock'),
   SESSION_SECRET: z.string().min(32),
+  SESSION_COOKIE_NAME: z.string().default('sessionId'),
+  SESSION_MAX_AGE_MS: z.coerce.number().default(7 * 24 * 60 * 60 * 1000),
 })
 
 const parsed = envSchema.safeParse(process.env)

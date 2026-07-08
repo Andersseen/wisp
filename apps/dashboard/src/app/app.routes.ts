@@ -1,4 +1,5 @@
 import type { Routes } from '@angular/router'
+import { authGuard } from './core/auth.guard'
 
 export const routes: Routes = [
   {
@@ -7,6 +8,7 @@ export const routes: Routes = [
   },
   {
     path: 'deploy',
+    canActivate: [authGuard],
     loadChildren: () => import('./features/deploy/deploy.routes').then((m) => m.deployRoutes),
   },
   { path: '', redirectTo: '/deploy', pathMatch: 'full' },

@@ -21,7 +21,7 @@ describe('AuthService', () => {
 
     const result = await service.register({
       email: 'test@wisp.sh',
-      hashedPassword: 'plain-for-test',
+      password: 'plain-for-test',
       name: 'Test',
     })
 
@@ -37,8 +37,8 @@ describe('AuthService', () => {
       }),
     })
 
-    expect(
-      service.register({ email: 'test@wisp.sh', hashedPassword: 'x', name: 'x' }),
-    ).rejects.toThrow('User already exists')
+    expect(service.register({ email: 'test@wisp.sh', password: 'x', name: 'x' })).rejects.toThrow(
+      'User already exists',
+    )
   })
 })

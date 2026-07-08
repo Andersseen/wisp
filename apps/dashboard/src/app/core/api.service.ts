@@ -8,18 +8,18 @@ export class ApiService {
   private readonly http = inject(HttpClient)
 
   get<T>(path: string): Observable<T> {
-    return this.http.get<T>(`${this.baseUrl}${path}`)
+    return this.http.get<T>(`${this.baseUrl}${path}`, { withCredentials: true })
   }
 
   post<T>(path: string, body: unknown): Observable<T> {
-    return this.http.post<T>(`${this.baseUrl}${path}`, body)
+    return this.http.post<T>(`${this.baseUrl}${path}`, body, { withCredentials: true })
   }
 
   patch<T>(path: string, body: unknown): Observable<T> {
-    return this.http.patch<T>(`${this.baseUrl}${path}`, body)
+    return this.http.patch<T>(`${this.baseUrl}${path}`, body, { withCredentials: true })
   }
 
   delete<T>(path: string): Observable<T> {
-    return this.http.delete<T>(`${this.baseUrl}${path}`)
+    return this.http.delete<T>(`${this.baseUrl}${path}`, { withCredentials: true })
   }
 }
