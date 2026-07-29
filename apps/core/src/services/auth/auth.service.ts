@@ -1,9 +1,12 @@
+import { hashSync } from '@node-rs/argon2'
 import { users } from '@wisp/db'
 import { eq } from 'drizzle-orm'
-import { generateId } from 'lucia'
 import type { DatabaseClient } from '../../plugins/db'
 import { ConflictError, UnauthorizedError } from '../../types/error'
+import { generateId } from '../../utils/id'
 import { PasswordService } from './password.service'
+
+const DUMMY_HASH = hashSync('wisp-dummy-password')
 
 export interface RegisterInput {
   email: string
@@ -40,6 +43,7 @@ export class AuthService {
     const user = await this.db.select().from(users).where(eq(users.email, email)).get()
 
     if (!user) {
+      await this.passwordService.verify(DUMMY_HASH, password)
       throw new UnauthorizedError('Invalid credentials')
     }
 

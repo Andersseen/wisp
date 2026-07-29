@@ -1,17 +1,17 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-07-08 (auth sessions shipped).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-07-29 (critical cleanup checkpoint).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
-The project is a **well-structured skeleton with working auth sessions**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **The build/deploy pipeline (git clone, docker build, compose up, Caddy routing, webhooks) is still TODO stubs.** Build features in the priority order below.
+The project is a **well-structured skeleton with working auth sessions**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **The build/deploy pipeline (git clone, docker build, container run, Caddy routing, webhooks) is still TODO stubs.** Build features in the priority order below.
 
 **Phase 0 and Phase 1 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth now issues real session cookies, protected routes enforce ownership, and the dashboard persists sessions across reloads.
 
 ## What works
 
 - Monorepo tooling: turbo tasks (lint, check-types, test, build all wired and green), Biome lint (repo-wide, `.angular` and `test-results` cache properly ignored), CI (lint/test/build/docker images).
-- DB package: schema for `users`/`services`/`jobs`/`sessions` with drizzle-zod contracts; client factory; drizzle-kit generate/migrate/seed wiring — verified working end to end (migrations `0000_far_winter_soldier.sql` and `0001_bouncy_gabe_jones.sql` generated and applied). **`db:seed` creates a real, log-in-able demo user: `demo@wisp.sh` / `demo1234`**.
+- DB package: schema for `users`/`services`/`jobs`/`sessions` with drizzle-zod contracts; FK cascades + indexes for services/jobs/sessions; `updatedAt` auto-update hooks; client factory with FK enforcement; drizzle-kit generate/migrate/seed wiring (migrations `0000`–`0002`). **`db:seed` creates a real, log-in-able demo user: `demo@wisp.sh` / `demo1234`**.
 - API boot & plumbing: Elysia app with cors, pino logger, typed-error handler, db/valkey/docker plugins; `/health` route. Boots clean with `bun run back:dev`.
 - Full dev stack reachable through Caddy: `http://localhost/api/health` → 200, `http://localhost/` → dashboard. Verified end-to-end.
 - **Auth sessions**: `POST /auth/login` issues an `HttpOnly` session cookie; `GET /auth/me` returns the current user; `POST /auth/logout` invalidates the session. `AuthService` uses `PasswordService` and the register body now accepts `password` (not `hashedPassword`).
@@ -26,7 +26,6 @@ The project is a **well-structured skeleton with working auth sessions**. Monore
 | File | Reality |
 |---|---|
 | `apps/core/src/services/deploy/build.service.ts` | Returns fake success; no git clone, no docker build |
-| `apps/core/src/engine/docker-compose.engine.ts` | `up`/`down` throw `Not implemented` |
 | `apps/core/src/engine/caddy.engine.ts` | `addRoute`/`removeRoute` throw `Not implemented` |
 | `apps/core/src/queue/deploy.worker.ts` | Returns `{ deployed }` without deploying |
 | `apps/core/src/routes/webhook.routes.ts` | Echoes payload; no signature check, no build trigger |
@@ -60,6 +59,8 @@ The full phased roadmap with design notes and ready-to-paste agent prompts lives
 - Then phases 4–7: run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-07-29 (critical cleanup checkpoint)** — Finished the interrupted Phase 2.5 cleanup. Hardened DB schema with FK cascades, indexes, `updatedAt` hooks, migration `0002_supreme_overlord.sql`, and `PRAGMA foreign_keys = ON`; made `db:migrate`/`db:seed` respect an existing `DATABASE_URL`. Removed dead config split files, Docker compose/deploy service stubs superseded by dockerode, stale deploy/service type schemas, `lucia`, `@elysiajs/eden`, dashboard environments, and unused frontend logger. Replaced Lucia IDs with `apps/core/src/utils/id.ts`; deleted expired sessions during validation; added dummy hash verification for unknown-login timing; added Redis error logging. Updated docs for cookie auth and dockerode target design. Verified `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` green.
 
 - **2026-07-08 (auth sessions — spec 001 done)** — Implemented Phase 1 auth sessions. Added `sessions` table and Drizzle migration `0001_bouncy_gabe_jones.sql`. Backend: `SessionService` with opaque tokens; `authPlugin` validates cookies; `POST /auth/login` sets `HttpOnly` cookie, `POST /auth/logout` invalidates it, `GET /auth/me` returns user; register body renamed from `hashedPassword` to `password`; `AuthService` now uses `PasswordService`; added `ForbiddenError`; `GET /deploy/:id` enforces ownership. Frontend: `ApiService` sends `withCredentials`; `AuthService.fetchMe()` restores session on boot; `authInterceptor` redirects on 401 without looping; `authGuard` protects `/deploy`; header shows user email and logout works. Added config vars `SESSION_COOKIE_NAME` / `SESSION_MAX_AGE_MS`. Added backend integration tests (login cookie, /me, logout, deploy ownership) and dashboard `AuthService` unit tests; updated Playwright e2e to cover login persistence and protected-route redirect. All gates green: `lint`, `check-types`, `test`, `build`. Chromium e2e passes; Firefox/WebKit need `npx playwright install`.
 

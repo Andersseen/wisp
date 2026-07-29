@@ -22,7 +22,12 @@ export class SessionService {
   async validateSession(token: string): Promise<UserContext | null> {
     const session = await this.db.select().from(sessions).where(eq(sessions.id, token)).get()
 
-    if (!session || session.expiresAt.getTime() <= Date.now()) {
+    if (!session) {
+      return null
+    }
+
+    if (session.expiresAt.getTime() <= Date.now()) {
+      await this.db.delete(sessions).where(eq(sessions.id, token))
       return null
     }
 

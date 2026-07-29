@@ -9,7 +9,9 @@ export const users = sqliteTable('users', {
   name: text('name'),
   role: text('role', { enum: ['admin', 'user'] }).default('user'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .$defaultFn(() => new Date())
+    .$onUpdateFn(() => new Date()),
 })
 
 export const insertUserSchema = createInsertSchema(users).omit({

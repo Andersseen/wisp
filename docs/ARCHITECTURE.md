@@ -32,7 +32,7 @@ Prod (`infra/docker/prod.yml`): same shape, but core + dashboard run as containe
 | `packages/typescript-config` | `@wisp/typescript-config` | Shared tsconfigs (`base`, `elysia`, `angular`) |
 | `infra` | — | compose files, Caddyfiles, install script |
 
-Task graph in `turbo.json`: `build` depends on `^build` + `db:generate`; `test` depends on `build`; db tasks chain `generate → migrate → seed`.
+Task graph in `turbo.json`: `build` depends on `^build` + `db:generate`; `test` runs against source; e2e depends on `build`; db tasks chain `generate → migrate → seed`.
 
 ## Backend (`apps/core`)
 
@@ -41,7 +41,7 @@ Task graph in `turbo.json`: `build` depends on `^build` + `db:generate`; `test` 
 ```
 routes/    HTTP surface. Elysia instances with prefix + t.Object validation. Thin: parse → call service → return.
 services/  Business logic. Plain classes, constructor-injected deps (db, redis). Throw typed errors.
-engine/    Side-effect adapters: DockerComposeEngine (compose up/down), CaddyEngine (route add/remove).
+engine/    Side-effect adapters for infrastructure integrations, currently Caddy route add/remove.
 queue/     BullMQ worker factories consuming jobs, delegating to services/engines.
 plugins/   Elysia cross-cutting: db, valkey, docker, logger (pino), error-handler, auth.
 config/    Zod-validated env. The only place process.env is read.
@@ -55,7 +55,7 @@ types/     Shared types + AppError hierarchy.
 ### Request lifecycle
 
 1. Elysia validates the body against the route's `t.Object` schema → automatic 400 (`VALIDATION_ERROR`) on mismatch.
-2. `authPlugin` derives `user` from the `Authorization: Bearer <sessionId>` header (Lucia validation is the pending part — see STATE.md).
+2. `authPlugin` derives `user` from the `HttpOnly` session cookie and validates it against the `sessions` table.
 3. Handler instantiates the service class with `db` from the plugin and delegates.
 4. Errors: services throw `AppError` subclasses (`types/error.ts`); `error-handler` plugin maps them to `{ success: false, code, message }` with the right HTTP status. Everything else → 500 `INTERNAL_ERROR`.
 
@@ -68,7 +68,7 @@ POST /deploy
         └► build worker          BuildService: git clone → docker build   (status: building)
               └► enqueue deploy job on queue 'deploy'
                     └► deploy worker
-                          ├► DockerComposeEngine.up(slug, composePath)
+                          ├► dockerode run/replace container
                           ├► CaddyEngine.addRoute(slug.domain, container)  (status: running)
                           └► jobs row per step, logs appended to jobs.logOutput
 POST /webhooks/github  (signature-verified) ──► same build+deploy chain for the matching service
@@ -79,13 +79,14 @@ State machines: `services.status ∈ pending|building|running|stopped|error`, `j
 ## Database (`packages/db`)
 
 - Client: `createDbClient(url)` → drizzle over `bun:sqlite` (`src/client.ts`). Sync-flavored drizzle API: `.get()` (one row) / `.all()` (many) / `.run()`.
-- Every table follows the same pattern (see `src/schema/services.ts` as exemplar): `text('id').primaryKey()` (lucia `generateId(15)`), text enums for statuses, `integer(..., { mode: 'timestamp' })` with `$defaultFn(() => new Date())`, plus exported drizzle-zod `insert*/select*` schemas and inferred types.
+- Every table follows the same pattern (see `src/schema/services.ts` as exemplar): `text('id').primaryKey()`, text enums for statuses, `integer(..., { mode: 'timestamp' })` with `$defaultFn(() => new Date())`, `$onUpdateFn(() => new Date())` on `updatedAt`, plus exported drizzle-zod `insert*/select*` schemas and inferred types.
 
 | Table | Key fields |
 |---|---|
 | `users` | email (unique), hashedPassword (argon2), name, role `admin\|user` |
-| `services` | name, slug (unique), gitUrl, branch, status, userId → users.id |
-| `jobs` | type `build\|deploy`, status, serviceId → services.id, logOutput |
+| `services` | name, slug (unique), gitUrl, branch, status, userId → users.id (cascade) |
+| `jobs` | type `build\|deploy`, status, serviceId → services.id (cascade), logOutput |
+| `sessions` | opaque id, userId → users.id (cascade), expiresAt |
 
 New tables must be exported from `src/schema/index.ts`, then `bun run db:generate && bun run db:migrate`.
 
@@ -93,7 +94,7 @@ New tables must be exported from `src/schema/index.ts`, then `bun run db:generat
 
 - **Zoneless** Angular (`provideExperimentalZonelessChangeDetection` in `app.config.ts`) — OnPush + signals are mandatory, not stylistic.
 - Routing: lazy `loadChildren` per feature — `/auth` (login, register), `/deploy` (service-list, service-create, `:id/logs`); root redirects to `/deploy`.
-- `core/`: `ApiService` (sole HTTP gateway, `baseUrl '/api'`), `AuthService` (user signal), `LoggerService`, `errorHandlerInterceptor` (registered via `withInterceptors`).
+- `core/`: `ApiService` (sole HTTP gateway, `baseUrl '/api'`), `AuthService` (user signal), `authInterceptor`, `errorHandlerInterceptor` (registered via `withInterceptors`).
 - Components: standalone, inline templates, `inject()`, `signal()` for local state, reactive forms. Exemplars: `service-create.component.ts` (form) and `service-list.component.ts` (list with `@for`/`@empty`).
 
 ## Infra

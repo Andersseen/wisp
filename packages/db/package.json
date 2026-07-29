@@ -7,8 +7,8 @@
   "scripts": {
     "lint": "biome check .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "DATABASE_URL=../../apps/core/sqlite.db drizzle-kit migrate",
-    "db:seed": "DATABASE_URL=../../apps/core/sqlite.db bun run src/seed.ts",
+    "db:migrate": "DATABASE_URL=\"${DATABASE_URL:-../../apps/core/sqlite.db}\" drizzle-kit migrate",
+    "db:seed": "DATABASE_URL=\"${DATABASE_URL:-../../apps/core/sqlite.db}\" bun run src/seed.ts",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

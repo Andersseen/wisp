@@ -5,7 +5,7 @@
 ## Universal
 
 - TypeScript strict. **Never** `any` (Biome error) — use `unknown` + narrowing, generics, or a real type.
-- **Never** `console.log` (Biome error) — backend: pino `logger` from `apps/core/src/plugins/logger.ts`; frontend: `LoggerService`.
+- **Never** `console.log` (Biome error) — backend: pino `logger` from `apps/core/src/plugins/logger.ts`; frontend: surface failures through component state or interceptors.
 - **Never** non-null assertion `!` (Biome error) — narrow with `if` or use `??`.
 - **Never** `.forEach` (Biome error) — use `for..of` or `.map/.filter` when producing a value.
 - No unused imports/variables (Biome errors). `const` over `let` wherever possible.
@@ -29,7 +29,7 @@
 
 - Plain classes, deps via constructor (`constructor(private db: DatabaseClient)`). No singletons, no service-locator — this keeps them unit-testable with mock deps.
 - Throw `AppError` subclasses for every failure mode; never return error-shaped objects, never throw bare `Error`.
-- IDs: `generateId(15)` from `lucia`.
+- IDs: `generateId(15)` from `apps/core/src/utils/id.ts`.
 - Return minimal DTOs (e.g. `{ id }`), not raw rows, when the caller doesn't need everything. Never return `hashedPassword` or other secrets.
 
 ### Plugins — exemplar: `src/plugins/db.ts`
@@ -58,7 +58,7 @@ Exemplar: `src/schema/services.ts`. Every table copies this pattern exactly:
 
 - `text('id').primaryKey()`; snake_case column names mapped to camelCase properties.
 - Status/role fields: `text('...', { enum: [...] })` with a `.default(...)`.
-- `createdAt`/`updatedAt`: `integer(..., { mode: 'timestamp' }).$defaultFn(() => new Date())`.
+- `createdAt`/`updatedAt`: `integer(..., { mode: 'timestamp' }).$defaultFn(() => new Date())`; add `$onUpdateFn(() => new Date())` to `updatedAt`.
 - Export `createInsertSchema(...).omit({ id, createdAt, updatedAt })`, `createSelectSchema(...)`, and the `z.infer` types. These zod schemas/types are the contract consumed by `@wisp/core` — never duplicate row types by hand elsewhere.
 - Export the new table from `src/schema/index.ts`; then `bun run db:generate && bun run db:migrate`. Migrations are generated artifacts — never edit them manually.
 

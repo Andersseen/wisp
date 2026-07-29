@@ -19,7 +19,7 @@ A lightweight self-hosted PaaS for a single VPS: users register a git repo, Wisp
 
 1. **The backend will not boot without a `.env`** containing `SESSION_SECRET` (min 32 chars). Copy `.env.example`. Env is validated in `apps/core/src/config/index.ts`.
 2. **Follow SDD**: only implement work covered by a spec in `docs/specs/`. No spec → write one first (template: `docs/specs/_TEMPLATE.md`). Do not refactor outside the spec's scope.
-3. **Biome errors you must never trigger**: `console.log` (use pino logger / `LoggerService`), `any`, non-null assertion `!`, `.forEach` (use `for..of`), unused imports/variables. See `biome.json`.
+3. **Biome errors you must never trigger**: `console.log` (backend uses pino logger), `any`, non-null assertion `!`, `.forEach` (use `for..of`), unused imports/variables. See `biome.json`.
 4. Throw typed errors from `apps/core/src/types/error.ts` (`NotFoundError`, `UnauthorizedError`, `ConflictError`, `ValidationError`) — never `new Error('...')` for flow control; the error handler maps them to HTTP statuses.
 5. All env access goes through `apps/core/src/config`. Never read `process.env` inline.
 6. DB schema lives **only** in `packages/db/src/schema/`. After changing it: `bun run db:generate` then `bun run db:migrate`. Never hand-edit `packages/db/migrations/`.

@@ -1,8 +1,8 @@
 import { type InsertService, services } from '@wisp/db'
 import { eq } from 'drizzle-orm'
-import { generateId } from 'lucia'
 import type { DatabaseClient } from '../../plugins/db'
 import { ConflictError, NotFoundError } from '../../types/error'
+import { generateId } from '../../utils/id'
 
 export class DeployService {
   constructor(private db: DatabaseClient) {}

@@ -1,7 +1,4 @@
 import { z } from 'zod'
-import { databaseConfigSchema } from './database'
-import { dockerConfigSchema } from './docker'
-import { valkeyConfigSchema } from './valkey'
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -22,11 +19,6 @@ if (!parsed.success) {
   throw new Error(`Invalid environment variables:\n${formatted}`)
 }
 
-export const config = {
-  ...parsed.data,
-  ...databaseConfigSchema.parse({}),
-  ...valkeyConfigSchema.parse({}),
-  ...dockerConfigSchema.parse({}),
-}
+export const config = parsed.data
 
 export type Config = typeof config

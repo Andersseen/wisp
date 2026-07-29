@@ -15,6 +15,13 @@
       "when": 1783495214096,
       "tag": "0001_bouncy_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785316544225,
+      "tag": "0002_supreme_overlord",
+      "breakpoints": true
     }
   ]
 }

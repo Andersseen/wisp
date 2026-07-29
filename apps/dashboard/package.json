@@ -21,7 +21,6 @@
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
-    "@elysiajs/eden": "^1.2.0",
     "@voltui/components": "^0.6.0",
     "angular-movement": "^0.5.0",
     "lumen-icons": "^0.2.0",
