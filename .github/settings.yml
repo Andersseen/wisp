@@ -4,7 +4,7 @@
 
 repository:
   name: wisp
-  description: Lightweight self-hosted PaaS for one VPS: Bun, Angular, Docker, SQLite, Valkey, and Caddy.
+  description: "Lightweight self-hosted PaaS for one VPS: Bun, Angular, Docker, SQLite, Valkey and Caddy."
   homepage: https://github.com/Andersseen/wisp
   topics:
     - paas
@@ -15,6 +15,7 @@ repository:
     - bun
     - elysia
     - angular
+    - typescript
     - sqlite
     - drizzle
     - bullmq
