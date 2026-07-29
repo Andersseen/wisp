@@ -7,7 +7,8 @@ body:
     attributes:
       value: |
         Thanks for taking the time to report a bug. Please fill in as much
-        detail as you can.
+        detail as you can. Before filing, check the current status:
+        https://github.com/Andersseen/wisp/blob/main/docs/STATE.md
 
   - type: textarea
     id: description
@@ -47,6 +48,22 @@ body:
         - OS: macOS 15
         - Bun: 1.3.11
         - Docker: 27.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Wisp is affected?
+      options:
+        - Backend / API
+        - Dashboard / frontend
+        - Database / migrations
+        - Docker / Caddy / infra
+        - CI / tooling
+        - Documentation
+        - Not sure
     validations:
       required: true
 

@@ -7,7 +7,8 @@ body:
     attributes:
       value: |
         Thanks for sharing your idea. Please check the
-        [roadmap](./docs/PLAN.md) and existing specs first.
+        roadmap and existing specs first:
+        https://github.com/Andersseen/wisp/blob/main/docs/PLAN.md
 
   - type: textarea
     id: problem
@@ -22,6 +23,23 @@ body:
     attributes:
       label: Proposed solution
       description: Describe the feature or change you would like to see.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Where does this feature fit best?
+      options:
+        - Build pipeline
+        - Runtime routing
+        - Service detail / logs
+        - GitHub webhooks
+        - Production hardening
+        - Dashboard UX
+        - Documentation
+        - Not sure
     validations:
       required: true
 

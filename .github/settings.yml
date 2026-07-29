@@ -4,10 +4,27 @@
 
 repository:
   name: wisp
-  description: A lightweight, self-hosted PaaS for a single VPS.
+  description: Lightweight self-hosted PaaS for one VPS: Bun, Angular, Docker, SQLite, Valkey, and Caddy.
   homepage: https://github.com/Andersseen/wisp
+  topics:
+    - paas
+    - self-hosted
+    - vps
+    - docker
+    - caddy
+    - bun
+    - elysia
+    - angular
+    - sqlite
+    - drizzle
+    - bullmq
+    - valkey
+    - devops
+    - platform-engineering
+    - developer-tools
   private: false
   has_issues: true
+  has_discussions: true
   has_projects: false
   has_wiki: false
   has_downloads: false
@@ -41,3 +58,50 @@ branches:
           - Andersseen
       allow_force_pushes: false
       allow_deletions: false
+
+labels:
+  - name: good first issue
+    color: 7057ff
+    description: Friendly, scoped work for new contributors.
+  - name: help wanted
+    color: 008672
+    description: Maintainer would welcome outside help.
+  - name: status: needs spec
+    color: fef2c0
+    description: Needs an approved spec before implementation.
+  - name: status: ready
+    color: 0e8a16
+    description: Ready for implementation.
+  - name: status: blocked
+    color: b60205
+    description: Blocked by a decision, dependency, or external state.
+  - name: area: backend
+    color: 1d76db
+    description: Elysia API, services, plugins, workers, or tests.
+  - name: area: frontend
+    color: c5def5
+    description: Angular dashboard, UI, routing, or e2e flows.
+  - name: area: database
+    color: fbca04
+    description: Drizzle schema, migrations, seed, or SQLite client.
+  - name: area: infra
+    color: d4c5f9
+    description: Docker, Caddy, CI, install scripts, or production ops.
+  - name: area: docs
+    color: 0075ca
+    description: README, docs, specs, or contributor guidance.
+  - name: phase: build-pipeline
+    color: 5319e7
+    description: Phase 3 work: git clone, Docker build, jobs, and logs.
+  - name: phase: runtime-routing
+    color: 5319e7
+    description: Phase 4 work: containers, service lifecycle, and Caddy routes.
+  - name: phase: service-detail
+    color: 5319e7
+    description: Phase 5 work: service pages, logs, status, and actions.
+  - name: phase: webhooks
+    color: 5319e7
+    description: Phase 6 work: signed GitHub webhook redeploys.
+  - name: phase: production-hardening
+    color: 5319e7
+    description: Phase 7 work: install, operations, backup, and docs.

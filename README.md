@@ -1,32 +1,56 @@
 # Wisp
 
 [![CI](https://github.com/Andersseen/wisp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andersseen/wisp/actions/workflows/ci.yml)
+[![Release](https://github.com/Andersseen/wisp/actions/workflows/release.yml/badge.svg)](https://github.com/Andersseen/wisp/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Bun](https://img.shields.io/badge/Bun-%3E%3D1.0.0-black?logo=bun)](https://bun.sh)
+[![Angular](https://img.shields.io/badge/Angular-21-DD0031?logo=angular)](https://angular.dev)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
 [![Last commit](https://img.shields.io/github/last-commit/Andersseen/wisp)](https://github.com/Andersseen/wisp/commits/main)
+[![Good first issues](https://img.shields.io/github/issues/Andersseen/wisp/good%20first%20issue?label=good%20first%20issues)](https://github.com/Andersseen/wisp/labels/good%20first%20issue)
 
-> A lightweight, self-hosted PaaS for a single VPS. Register a git repo, Wisp
-> builds it into a Docker container, runs it, and exposes it through Caddy.
+<p align="center">
+  <img src="./apps/demo/public/og-image.png" alt="Wisp — Self-hosted PaaS" width="100%">
+</p>
 
-Wisp is an opinionated open-source platform-as-a-service toolkit built for
-developers who want Heroku-like deploys on their own server. It combines a fast
-Elysia API, an Angular dashboard, Drizzle/SQLite persistence, BullMQ/Valkey job
-processing, and Caddy reverse-proxying into a single reproducible monorepo.
+> A lightweight, self-hosted PaaS for one VPS: auth, dashboard, jobs, Docker,
+> SQLite, Valkey, and Caddy in one small Bun monorepo.
 
-## ✨ Features
+Wisp is an opinionated open-source platform-as-a-service toolkit for developers
+who want Heroku-like deploys without running a heavy control plane. The goal is
+simple: paste a git URL, build a Docker image, run it on your own VPS, and route
+traffic through Caddy.
 
-- **Git-to-container deploys** — point Wisp at a repo, it clones, builds, and
-  runs the resulting image.
-- **Web dashboard** — Angular 21 zoneless SPA for managing services, viewing
-  build logs, and monitoring status.
-- **Service routing** — Caddy automatically provisions routes for deployed
-  services.
-- **Job queue** — BullMQ on Valkey handles builds, deploys, and teardowns
-  asynchronously.
-- **Lightweight persistence** — SQLite via Drizzle ORM keeps the stack simple on
-  a single VPS.
-- **Monorepo tooling** — Turborepo + Bun workspaces, Biome lint/format, Bun
-  tests, Playwright e2e.
+The project is pre-v1 and intentionally transparent about what is real today.
+Auth sessions, the Angular dashboard, service ownership, DB schema, CI, and the
+developer workflow are working. The build/run/routing pipeline is the next major
+milestone, and contributors are very welcome there.
+
+## Why Wisp
+
+- **Single-server first** — built for one VPS, not a Kubernetes cluster.
+- **Small operational surface** — Bun, SQLite, Valkey, Docker, and Caddy.
+- **Honest roadmap** — specs and `docs/STATE.md` distinguish shipped code from
+  stubs.
+- **Contributor-friendly process** — typed errors, strict linting, focused
+  specs, issue templates, CI gates, and a compact architecture.
+- **Modern web stack** — Elysia API, Angular 21 zoneless dashboard, Drizzle ORM,
+  BullMQ, and Tailwind CSS 4.
+
+## Project Status
+
+| Area | Status |
+|---|---|
+| Auth sessions | Working: `HttpOnly` cookies, `/auth/me`, logout, ownership checks |
+| Dashboard shell | Working: login/register, service list/create, auth-aware layout |
+| Database | Working: Drizzle/SQLite schema, migrations, seed user, FK cascades |
+| CI/tooling | Working: lint, typecheck, tests, build, Docker image builds |
+| Build pipeline | Next: git clone, Docker build, persisted job logs |
+| Runtime routing | Planned: container lifecycle and Caddy admin API routing |
+| Webhooks | Planned: signed GitHub push redeploys |
+
+See [docs/STATE.md](./docs/STATE.md) for the exact current behavior and
+[docs/PLAN.md](./docs/PLAN.md) for the v1 roadmap.
 
 ## 🏗 Architecture
 
@@ -87,6 +111,19 @@ bun run dev
 The dashboard is available at `http://localhost` and the API at
 `http://localhost/api/health`.
 
+## Roadmap
+
+Wisp is moving toward a focused v1:
+
+1. Build pipeline: clone repos, run Docker builds, stream logs to jobs.
+2. Runtime control: run/replace containers and manage Caddy routes.
+3. Service detail: job history, logs, stop/start/rebuild/delete actions.
+4. GitHub webhooks: signed push events that trigger redeploys.
+5. Production hardening: install script, backups, docs, and VPS verification.
+
+The detailed plan lives in [docs/PLAN.md](./docs/PLAN.md). Specs live in
+[docs/specs/](./docs/specs/).
+
 ## 📦 Project structure
 
 ```text
@@ -121,12 +158,31 @@ wisp/
 
 ## 🤝 Contributing
 
-We welcome contributions! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for
-details on setup, commit conventions, branch protection, and the pull request
-checklist.
+Contributions are welcome, especially if you enjoy infrastructure, developer
+tools, Angular, Workers-style APIs, or making small systems feel polished.
+
+Good places to start:
+
+- Issues labeled
+  [`good first issue`](https://github.com/Andersseen/wisp/labels/good%20first%20issue)
+  or [`help wanted`](https://github.com/Andersseen/wisp/labels/help%20wanted).
+- Docs improvements in `docs/`, especially where code and docs drift.
+- Tests around auth, deploy routes, and future build pipeline behavior.
+- Phase 3 work from the roadmap: Docker build jobs and persisted logs.
+
+Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, commit conventions,
+branch protection, and the pull request checklist.
 
 All contributors are expected to follow our
 [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+## Repository Topics
+
+Suggested GitHub topics for discovery:
+
+`paas`, `self-hosted`, `vps`, `docker`, `caddy`, `bun`, `elysia`, `angular`,
+`sqlite`, `drizzle`, `bullmq`, `valkey`, `devops`, `platform-engineering`,
+`developer-tools`
 
 ## 🔒 Security
 

@@ -1,0 +1,67 @@
+name: Spec task
+description: Propose scoped implementation work tied to the roadmap
+title: '[task] '
+labels: ['status: needs spec']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Wisp uses spec-driven development for non-trivial changes. Start from
+        the roadmap and keep the task small enough to review.
+
+        Roadmap: https://github.com/Andersseen/wisp/blob/main/docs/PLAN.md
+        Current state: https://github.com/Andersseen/wisp/blob/main/docs/STATE.md
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap phase
+      options:
+        - Phase 3 — Build pipeline
+        - Phase 4 — Run containers and Caddy routing
+        - Phase 5 — Service detail, jobs, and logs
+        - Phase 6 — GitHub webhook auto-deploy
+        - Phase 7 — Production hardening and install
+        - Cross-cutting cleanup
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What should be true when this task is done?
+      placeholder: A user can create a service and see a persisted build job with logs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: List the files, endpoints, UI screens, or tests likely affected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete checks or tests that should pass.
+      placeholder: |
+        - Creating a service inserts a pending build job.
+        - The worker marks the job running and then success/failed.
+        - `bun run test` covers the lifecycle.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked `docs/STATE.md` so this does not duplicate known stubs.
+          required: true
+        - label: I checked `docs/PLAN.md` and this fits the v1 roadmap.
+          required: true

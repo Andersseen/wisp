@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Roadmap and current status
+    url: https://github.com/Andersseen/wisp/blob/main/docs/STATE.md
+    about: Check what works today, what is stubbed, and what is planned next.
   - name: Ask a question
     url: https://github.com/Andersseen/wisp/discussions
     about: Please use GitHub Discussions for general questions and support.
