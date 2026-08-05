@@ -1,13 +1,16 @@
 import { cors } from '@elysiajs/cors'
 import { Elysia } from 'elysia'
 import { config } from './config'
-import { dbPlugin } from './plugins/db'
+import { db, dbPlugin } from './plugins/db'
 import { dockerPlugin } from './plugins/docker'
 import { errorHandlerPlugin } from './plugins/error-handler'
 import { logger, loggerPlugin } from './plugins/logger'
-import { valkeyPlugin } from './plugins/valkey'
+import { queuePlugin, queueService } from './plugins/queue'
+import { redis, valkeyPlugin } from './plugins/valkey'
+import { createBuildWorker } from './queue/build.worker'
+import { createDeployWorker } from './queue/deploy.worker'
 import { authRoutes } from './routes/auth.routes'
-import { deployRoutes } from './routes/deploy.routes'
+import { createDeployRoutes } from './routes/deploy.routes'
 import { healthRoutes } from './routes/health.routes'
 import { webhookRoutes } from './routes/webhook.routes'
 
@@ -17,11 +20,26 @@ const app = new Elysia()
   .use(errorHandlerPlugin)
   .use(dbPlugin)
   .use(valkeyPlugin)
+  .use(queuePlugin)
   .use(dockerPlugin)
   .use(authRoutes)
-  .use(deployRoutes)
+  .use(createDeployRoutes(queueService))
   .use(webhookRoutes)
   .use(healthRoutes)
   .listen(config.PORT)
+
+const buildWorker = createBuildWorker(redis, db, queueService)
+const deployWorker = createDeployWorker(redis, db)
+
+async function gracefulShutdown(signal: string): Promise<void> {
+  logger.info({ signal }, 'shutting down gracefully')
+  await buildWorker.close()
+  await deployWorker.close()
+  await app.stop()
+  process.exit(0)
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
 
 logger.info(`Wisp core running at ${app.server?.hostname}:${app.server?.port}`)

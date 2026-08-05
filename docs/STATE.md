@@ -1,12 +1,12 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-07-29 (critical cleanup checkpoint).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-08-05 (Phase 3 build pipeline + Phase 4 run/route done).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
-The project is a **well-structured skeleton with working auth sessions**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **The build/deploy pipeline (git clone, docker build, container run, Caddy routing, webhooks) is still TODO stubs.** Build features in the priority order below.
+The project is a **working single-VPS PaaS skeleton**: auth, build pipeline, container runtime, and Caddy routing are all wired end-to-end. A user can create a service, Wisp builds the Docker image, runs the container, and exposes it via `slug.<WISP_DOMAIN>`. The dashboard still needs the service detail/logs page (Phase 5) and the GitHub webhook (Phase 6).
 
-**Phase 0 and Phase 1 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth now issues real session cookies, protected routes enforce ownership, and the dashboard persists sessions across reloads.
+**Phase 0, Phase 1, Phase 3, and Phase 4 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth works, protected routes enforce ownership, the dashboard persists sessions, and the full build → run → route flow is implemented: create service → git clone → docker build → run container → Caddy reverse-proxy route.
 
 ## What works
 
@@ -18,18 +18,15 @@ The project is a **well-structured skeleton with working auth sessions**. Monore
 - **Protected deploy routes**: `POST /deploy`, `GET /deploy`, and `GET /deploy/:id` all require an active session; `GET /deploy/:id` checks ownership and returns 403 for other users' services.
 - Dashboard: **Angular 21 (zoneless) + Tailwind CSS 4 + owner's own UI stack** — `@voltui/components`, `lumen-icons`, `angular-movement`, `quartz-headless`. App shell with sticky header, auth-aware nav, dark-mode toggle; card-based login/register; services list with skeleton/empty/badges; create-service form; terminal-style logs page; route titles + 404. Production build ~464 kB initial / ~112 kB transfer.
 - Dashboard auth wiring: `AuthService.fetchMe()` restores the session on app boot; `ApiService` sends credentials; `authInterceptor` redirects to `/auth/login` on 401 (without looping on logout/auth-check); `authGuard` protects `/deploy`; the header shows the logged-in user's email and logout works.
-- Tests: backend unit + integration tests for auth and deploy (15/15 passing in `apps/core`); dashboard `AuthService` unit tests + `LoginComponent` tests (8/8 passing in `apps/dashboard`); Playwright e2e auth/deploy tests pass on Chromium (Firefox/WebKit require `npx playwright install`).
+- Tests: backend unit + integration tests for auth, deploy, and build worker (22/22 passing in `apps/core`); dashboard `AuthService` unit tests + `LoginComponent` tests (8/8 passing in `apps/dashboard`); Playwright e2e auth/deploy tests pass on Chromium (Firefox/WebKit require `npx playwright install`).
 - Open-source hardening kit, shared `@wisp/ui` library, demo landing page, and release automation all remain in place and green.
 
 ## Stubs (files that pretend to work but don't)
 
 | File | Reality |
 |---|---|
-| `apps/core/src/services/deploy/build.service.ts` | Returns fake success; no git clone, no docker build |
-| `apps/core/src/engine/caddy.engine.ts` | `addRoute`/`removeRoute` throw `Not implemented` |
-| `apps/core/src/queue/deploy.worker.ts` | Returns `{ deployed }` without deploying |
-| `apps/core/src/routes/webhook.routes.ts` | Echoes payload; no signature check, no build trigger |
-| `apps/dashboard/.../logs/logs.component.ts` | Shows "No logs available." — no API call (no logs endpoint exists yet) |
+| `apps/core/src/routes/webhook.routes.ts` | Echoes payload; no signature check, no build trigger (Phase 6) |
+| `apps/dashboard/.../logs/logs.component.ts` | Shows "No logs available." — no API call (full detail page in Phase 5) |
 
 ## Known bugs & traps (verify before "fixing" elsewhere)
 
@@ -38,9 +35,9 @@ The project is a **well-structured skeleton with working auth sessions**. Monore
 3. ~~Misleading field name~~ **Fixed 2026-07-08**: register API body uses `password`; `hashedPassword` is no longer accepted.
 4. ~~Wrong error type in deploy routes~~ **Fixed 2026-07-07**: `deploy.routes.ts` throws `UnauthorizedError`; integration test asserts 401 on both `POST /deploy` and `GET /deploy`.
 5. ~~No ownership check~~ **Fixed 2026-07-08**: `GET /deploy/:id` is auth-protected and returns 403 if the service does not belong to the current user.
-6. **Queue name mismatch / dead consumers**: `QueueService` produces only to queue `'build'`; `deploy.worker.ts` listens on `'deploy'` (no producer); **no worker is ever instantiated in `src/index.ts`**, so no job would be processed at all.
+6. ~~Queue name mismatch / dead consumers~~ **Fixed 2026-08-05**: `POST /deploy` inserts a `jobs` row and enqueues to BullMQ queue `'build'`; `src/index.ts` instantiates `createBuildWorker(redis, db)` and closes it gracefully on shutdown.
 7. ~~Duplicate worker implementations~~ **Fixed 2026-07-07**: deleted `services/queue/worker.service.ts` (the unused class); kept the `queue/*.worker.ts` factory-style convention.
-8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12). New env vars `SESSION_COOKIE_NAME` and `SESSION_MAX_AGE_MS` have sensible defaults.
+8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12). New env vars `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE_MS`, `WORK_DIR`, `WISP_DOMAIN`, and `CADDY_ADMIN_URL` have sensible defaults.
 9. ~~Formatter trap~~ **Fixed 2026-07-07**: `biome.json` pins `javascript.formatter.quoteStyle: "single"` and `semicolons: "asNeeded"`; `bun run lint` no longer wants to rewrite the whole repo.
 10. ~~Dashboard auth is cosmetic~~ **Fixed 2026-07-08**: `/deploy` has `authGuard`; `AuthService.user` is restored on reload via `APP_INITIALIZER` + `GET /auth/me`; logout calls the API and clears state.
 11. **MinIO** runs in dev compose but nothing uses it yet — don't "clean it up"; it's reserved for build artifacts/logs.
@@ -55,10 +52,16 @@ The full phased roadmap with design notes and ready-to-paste agent prompts lives
 
 - **Phase 0 done**; **Phase 1 done** — [001-auth-sessions](specs/001-auth-sessions.md) implemented and verified. Auth is no longer a blocker.
 - **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs — see PLAN.md Phase 2 for what shipped).
-- **Now → Phase 3** — build pipeline (clone → docker build → jobs). Draft [003-build-pipeline](specs/003-build-pipeline.md) from PLAN.md Phase 3 design notes, get owner approval, then implement.
-- Then phases 4–7: run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
+- **Phase 3 done** — [003-build-pipeline](specs/003-build-pipeline.md) implemented and verified.
+- **Phase 4 done** — [004-run-and-route](specs/004-run-and-route.md) implemented and verified: deploy worker runs containers, manages Docker network, and wires Caddy routes; `start`/`stop`/`DELETE` endpoints added.
+- **Now → Phase 5** — service detail page with jobs, logs, and actions. Draft [005-service-detail](specs/005-service-detail.md) from PLAN.md Phase 5 design notes, get owner approval, then implement.
+- Then phases 6–7: GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-08-05 (Phase 4 run & route — spec 004 done)** — Implemented container runtime and Caddy routing. Added `services.port` column and migration `0003_nifty_vector.sql`. Added `WISP_DOMAIN` and `CADDY_ADMIN_URL` config; exposed Caddy admin `:2019` and added shared `wisp-net` Docker network in dev/prod compose. Implemented `CaddyEngine` (idempotent add/remove reverse-proxy routes) and `RunService` (create/start/stop/remove/redeploy containers on `wisp-net`). Added `QueueService.addDeployJob` and real `deploy.worker.ts` that runs `wisp/<slug>:latest` after a successful build. Updated `build.worker.ts` to detect port from image `ExposedPorts` and enqueue deploy. Added `POST /deploy/:id/start`, `POST /deploy/:id/stop`, and `DELETE /deploy/:id` endpoints with ownership. Added unit tests for `RunService` and `CaddyEngine`, and integration tests for start/stop/delete. `createDeployRoutes` now accepts an optional `RunService` for testability. All gates green: `lint`, `check-types`, `test` (36 core + 8 dashboard), `build`.
+
+- **2026-08-05 (Phase 3 build pipeline — spec 003 done)** — Implemented real git-clone → docker-build job flow. Added `WORK_DIR` config and `build-data` volume in `infra/docker/prod.yml`. Refactored `BuildService` with injectable `exec`/`docker` boundaries; it shallow-clones repos, requires a root `Dockerfile`, builds via `dockerode`, captures build logs, tags `wisp/<slug>:<jobId>` and `wisp/<slug>:latest`, and cleans the workdir. Updated `DeployService.create` to insert a `jobs` row and enqueue via `QueueService`. Updated `build.worker.ts` to update `jobs`/`services` status (`pending → building → success|failed|error`). Wired the build worker into `src/index.ts` with graceful `SIGTERM`/`SIGINT` shutdown. Added `GET /deploy/:id/jobs` with ownership checks. Made the queue service injectable via `queuePlugin`/`createDeployRoutes(queueService)` so integration tests can mock it. Added `lazyConnect: true` to Redis to avoid spurious connections in tests. Added dashboard `DeployService.getJobs()`. Added backend unit tests for `BuildService` and integration tests for job creation and the `/deploy/:id/jobs` endpoint. Verified all gates green: `bun run lint`, `bun run check-types`, `bun run test`.
 
 - **2026-07-29 (GitHub presentation pass)** — Improved repository presentation for contributors: refreshed `README.md` with a stronger first impression, status table, roadmap, contribution entry points, recommended topics, and the existing Open Graph image; expanded `.github/settings.yml` with About metadata, topics, Discussions, and a contributor-friendly label taxonomy; added a spec-task issue template and improved bug/feature forms with area/status guidance. Verified `bun run lint` and `git diff --check` green.
 
