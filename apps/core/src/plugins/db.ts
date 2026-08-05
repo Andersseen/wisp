@@ -4,7 +4,6 @@ import { config } from '../config'
 
 export type DatabaseClient = ReturnType<typeof createDbClient>
 
-export const dbPlugin = new Elysia({ name: 'db' }).decorate(
-  'db',
-  createDbClient(config.DATABASE_URL),
-)
+export const db = createDbClient(config.DATABASE_URL)
+
+export const dbPlugin = new Elysia({ name: 'db' }).decorate('db', db)

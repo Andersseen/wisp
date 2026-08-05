@@ -3,7 +3,7 @@ import { Redis } from 'ioredis'
 import { config } from '../config'
 import { logger } from './logger'
 
-export const redis = new Redis(config.VALKEY_URL)
+export const redis = new Redis(config.VALKEY_URL, { lazyConnect: true })
 
 redis.on('error', (err) => {
   logger.warn({ err }, 'redis connection error')

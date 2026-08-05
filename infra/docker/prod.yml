@@ -29,10 +29,12 @@ services:
       DATABASE_URL: /data/sqlite.db
       VALKEY_URL: redis://valkey:6379
       DOCKER_SOCKET: /var/run/docker.sock
+      WORK_DIR: /app/data/builds
       SESSION_SECRET: ${SESSION_SECRET}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - sqlite-data:/data
+      - build-data:/app/data/builds
     depends_on:
       valkey:
         condition: service_healthy
@@ -51,3 +53,4 @@ volumes:
   caddy-data:
   caddy-config:
   sqlite-data:
+  build-data:

@@ -1,6 +1,14 @@
 import { Queue } from 'bullmq'
 import type { Redis } from 'ioredis'
 
+export interface BuildJobData {
+  serviceId: string
+  slug: string
+  gitUrl: string
+  branch: string
+  jobId: string
+}
+
 export class QueueService {
   private buildQueue: Queue
 
@@ -8,8 +16,7 @@ export class QueueService {
     this.buildQueue = new Queue('build', { connection: redis })
   }
 
-  async addBuildJob(serviceId: string, gitUrl: string, branch: string): Promise<string> {
-    const job = await this.buildQueue.add('build', { serviceId, gitUrl, branch })
-    return job.id ?? ''
+  async addBuildJob(data: BuildJobData): Promise<void> {
+    await this.buildQueue.add('build', data)
   }
 }
