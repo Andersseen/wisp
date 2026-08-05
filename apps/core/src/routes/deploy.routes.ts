@@ -2,10 +2,11 @@ import { type AnyElysia, Elysia, t } from 'elysia'
 import { authPlugin } from '../plugins/auth'
 import { dbPlugin } from '../plugins/db'
 import { DeployService } from '../services/deploy/deploy.service'
+import type { RunService } from '../services/deploy/run.service'
 import type { QueueService } from '../services/queue/queue.service'
 import { ForbiddenError, UnauthorizedError } from '../types/error'
 
-export function createDeployRoutes(queueService: QueueService): AnyElysia {
+export function createDeployRoutes(queueService: QueueService, runService?: RunService): AnyElysia {
   return new Elysia({ prefix: '/deploy' })
     .use(dbPlugin)
     .use(authPlugin)
@@ -15,7 +16,7 @@ export function createDeployRoutes(queueService: QueueService): AnyElysia {
         if (!user) {
           throw new UnauthorizedError()
         }
-        const service = new DeployService(db, queueService)
+        const service = new DeployService(db, queueService, runService)
         return service.create({ ...body, userId: user.id })
       },
       {
@@ -31,14 +32,14 @@ export function createDeployRoutes(queueService: QueueService): AnyElysia {
       if (!user) {
         throw new UnauthorizedError()
       }
-      const service = new DeployService(db, queueService)
+      const service = new DeployService(db, queueService, runService)
       return service.listByUser(user.id)
     })
     .get('/:id', async ({ params, db, user }) => {
       if (!user) {
         throw new UnauthorizedError()
       }
-      const service = new DeployService(db, queueService)
+      const service = new DeployService(db, queueService, runService)
       const deployment = await service.getById(params.id)
       if (deployment.userId !== user.id) {
         throw new ForbiddenError('Service does not belong to user')
@@ -49,12 +50,48 @@ export function createDeployRoutes(queueService: QueueService): AnyElysia {
       if (!user) {
         throw new UnauthorizedError()
       }
-      const service = new DeployService(db, queueService)
+      const service = new DeployService(db, queueService, runService)
       const deployment = await service.getById(params.id)
       if (deployment.userId !== user.id) {
         throw new ForbiddenError('Service does not belong to user')
       }
       const jobs = await service.listJobsByService(params.id)
       return { jobs }
+    })
+    .post('/:id/start', async ({ params, db, user }) => {
+      if (!user) {
+        throw new UnauthorizedError()
+      }
+      const service = new DeployService(db, queueService, runService)
+      const deployment = await service.getById(params.id)
+      if (deployment.userId !== user.id) {
+        throw new ForbiddenError('Service does not belong to user')
+      }
+      await service.start(params.id)
+      return { started: true }
+    })
+    .post('/:id/stop', async ({ params, db, user }) => {
+      if (!user) {
+        throw new UnauthorizedError()
+      }
+      const service = new DeployService(db, queueService, runService)
+      const deployment = await service.getById(params.id)
+      if (deployment.userId !== user.id) {
+        throw new ForbiddenError('Service does not belong to user')
+      }
+      await service.stop(params.id)
+      return { stopped: true }
+    })
+    .delete('/:id', async ({ params, db, user }) => {
+      if (!user) {
+        throw new UnauthorizedError()
+      }
+      const service = new DeployService(db, queueService, runService)
+      const deployment = await service.getById(params.id)
+      if (deployment.userId !== user.id) {
+        throw new ForbiddenError('Service does not belong to user')
+      }
+      await service.delete(params.id)
+      return { deleted: true }
     })
 }

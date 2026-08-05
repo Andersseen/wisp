@@ -136,6 +136,29 @@ export class BuildService {
     }
   }
 
+  async detectImagePort(slug: string, jobId?: string): Promise<number> {
+    const imageTag = jobId ? `wisp/${slug}:${jobId}` : `wisp/${slug}:latest`
+
+    try {
+      const image = this.docker.getImage(imageTag)
+      const info = await image.inspect()
+      const exposedPorts = info.Config?.ExposedPorts
+      if (exposedPorts) {
+        const ports = Object.keys(exposedPorts)
+        if (ports.length > 0) {
+          const first = ports[0]
+          if (!first) return 3000
+          const parsed = Number.parseInt(first.split('/')[0] ?? '', 10)
+          if (!Number.isNaN(parsed)) return parsed
+        }
+      }
+    } catch {
+      // ignore and fallback
+    }
+
+    return 3000
+  }
+
   private followBuildStream(
     stream: NodeJS.ReadableStream,
   ): Promise<{ success: boolean; log: string }> {

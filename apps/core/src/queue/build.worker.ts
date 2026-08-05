@@ -4,8 +4,14 @@ import { eq } from 'drizzle-orm'
 import type { Redis } from 'ioredis'
 import type { DatabaseClient } from '../plugins/db'
 import { BuildService } from '../services/deploy/build.service'
+import type { QueueService } from '../services/queue/queue.service'
+import { generateId } from '../utils/id'
 
-export function createBuildWorker(redis: Redis, db: DatabaseClient): Worker {
+export function createBuildWorker(
+  redis: Redis,
+  db: DatabaseClient,
+  queueService: QueueService,
+): Worker {
   const buildService = new BuildService()
 
   return new Worker(
@@ -31,7 +37,20 @@ export function createBuildWorker(redis: Redis, db: DatabaseClient): Worker {
 
       if (!result.success) {
         await db.update(services).set({ status: 'error' }).where(eq(services.id, serviceId))
+        return result
       }
+
+      const port = await buildService.detectImagePort(slug, jobId)
+      await db.update(services).set({ port }).where(eq(services.id, serviceId))
+
+      const deployJobId = generateId(15)
+      await db.insert(jobs).values({
+        id: deployJobId,
+        type: 'deploy',
+        status: 'pending',
+        serviceId,
+      })
+      await queueService.addDeployJob({ serviceId, slug, jobId: deployJobId, port })
 
       return result
     },

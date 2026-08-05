@@ -22,6 +22,13 @@
       "when": 1785316544225,
       "tag": "0002_supreme_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785939008436,
+      "tag": "0003_nifty_vector",
+      "breakpoints": true
     }
   ]
 }

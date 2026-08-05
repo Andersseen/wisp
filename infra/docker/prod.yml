@@ -14,10 +14,13 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "2019:2019"
     volumes:
       - ../caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+    networks:
+      - wisp-net
 
   core:
     build:
@@ -30,14 +33,20 @@ services:
       VALKEY_URL: redis://valkey:6379
       DOCKER_SOCKET: /var/run/docker.sock
       WORK_DIR: /app/data/builds
+      WISP_DOMAIN: ${WISP_DOMAIN:-localhost}
+      CADDY_ADMIN_URL: http://caddy:2019
       SESSION_SECRET: ${SESSION_SECRET}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - sqlite-data:/data
       - build-data:/app/data/builds
+    networks:
+      - wisp-net
     depends_on:
       valkey:
         condition: service_healthy
+      caddy:
+        condition: service_started
 
   dashboard:
     build:
@@ -47,6 +56,10 @@ services:
       NODE_ENV: production
     depends_on:
       - core
+
+networks:
+  wisp-net:
+    name: wisp-net
 
 volumes:
   valkey-data:

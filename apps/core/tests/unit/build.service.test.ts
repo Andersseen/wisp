@@ -9,11 +9,22 @@ function createMockDocker(
   onBuildFinished: (err: Error | null, output: Array<{ stream?: string; error?: string }>) => void,
 ): Dockerode {
   const buildImage = mock((stream: NodeJS.ReadableStream) => {
-    stream.resume()
-    return Promise.resolve({
-      pipe: () => undefined,
-      on: () => undefined,
-    } as unknown as NodeJS.ReadableStream)
+    return new Promise<NodeJS.ReadableStream>((resolve) => {
+      stream.on('end', () =>
+        resolve({
+          pipe: () => undefined,
+          on: () => undefined,
+        } as unknown as NodeJS.ReadableStream),
+      )
+      stream.on('data', () => undefined)
+      stream.on('error', () =>
+        resolve({
+          pipe: () => undefined,
+          on: () => undefined,
+        } as unknown as NodeJS.ReadableStream),
+      )
+      stream.resume()
+    })
   })
 
   const getImage = mock(() => ({

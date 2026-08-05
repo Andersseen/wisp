@@ -16,10 +16,13 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "2019:2019"
     volumes:
       - ../caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+    networks:
+      - wisp-net
 
   minio:
     image: minio/minio:latest
@@ -32,6 +35,10 @@ services:
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
+
+networks:
+  wisp-net:
+    name: wisp-net
 
 volumes:
   valkey-data:

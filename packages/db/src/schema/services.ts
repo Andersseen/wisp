@@ -14,6 +14,7 @@ export const services = sqliteTable(
     status: text('status', {
       enum: ['pending', 'building', 'running', 'stopped', 'error'],
     }).default('pending'),
+    port: integer('port'),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),

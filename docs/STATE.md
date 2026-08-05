@@ -1,12 +1,12 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-08-05 (Phase 3 build pipeline done).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-08-05 (Phase 3 build pipeline + Phase 4 run/route done).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
-The project is a **well-structured skeleton with working auth sessions and a real build pipeline**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, login/register/deploy list, and git-clone → docker-build job flow all work end-to-end. **Running containers and Caddy routing (Phase 4) is the next critical TODO.** Build features in the priority order below.
+The project is a **working single-VPS PaaS skeleton**: auth, build pipeline, container runtime, and Caddy routing are all wired end-to-end. A user can create a service, Wisp builds the Docker image, runs the container, and exposes it via `slug.<WISP_DOMAIN>`. The dashboard still needs the service detail/logs page (Phase 5) and the GitHub webhook (Phase 6).
 
-**Phase 0, Phase 1, and Phase 3 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth now issues real session cookies, protected routes enforce ownership, the dashboard persists sessions across reloads, and creating a service enqueues a real build job (git clone → Dockerfile check → docker build → `wisp/<slug>:latest` tag).
+**Phase 0, Phase 1, Phase 3, and Phase 4 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth works, protected routes enforce ownership, the dashboard persists sessions, and the full build → run → route flow is implemented: create service → git clone → docker build → run container → Caddy reverse-proxy route.
 
 ## What works
 
@@ -25,8 +25,6 @@ The project is a **well-structured skeleton with working auth sessions and a rea
 
 | File | Reality |
 |---|---|
-| `apps/core/src/engine/caddy.engine.ts` | `addRoute`/`removeRoute` throw `Not implemented` |
-| `apps/core/src/queue/deploy.worker.ts` | Returns `{ deployed }` without deploying (Phase 4) |
 | `apps/core/src/routes/webhook.routes.ts` | Echoes payload; no signature check, no build trigger (Phase 6) |
 | `apps/dashboard/.../logs/logs.component.ts` | Shows "No logs available." — no API call (full detail page in Phase 5) |
 
@@ -39,7 +37,7 @@ The project is a **well-structured skeleton with working auth sessions and a rea
 5. ~~No ownership check~~ **Fixed 2026-07-08**: `GET /deploy/:id` is auth-protected and returns 403 if the service does not belong to the current user.
 6. ~~Queue name mismatch / dead consumers~~ **Fixed 2026-08-05**: `POST /deploy` inserts a `jobs` row and enqueues to BullMQ queue `'build'`; `src/index.ts` instantiates `createBuildWorker(redis, db)` and closes it gracefully on shutdown.
 7. ~~Duplicate worker implementations~~ **Fixed 2026-07-07**: deleted `services/queue/worker.service.ts` (the unused class); kept the `queue/*.worker.ts` factory-style convention.
-8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12). New env vars `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE_MS`, and `WORK_DIR` have sensible defaults.
+8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12). New env vars `SESSION_COOKIE_NAME`, `SESSION_MAX_AGE_MS`, `WORK_DIR`, `WISP_DOMAIN`, and `CADDY_ADMIN_URL` have sensible defaults.
 9. ~~Formatter trap~~ **Fixed 2026-07-07**: `biome.json` pins `javascript.formatter.quoteStyle: "single"` and `semicolons: "asNeeded"`; `bun run lint` no longer wants to rewrite the whole repo.
 10. ~~Dashboard auth is cosmetic~~ **Fixed 2026-07-08**: `/deploy` has `authGuard`; `AuthService.user` is restored on reload via `APP_INITIALIZER` + `GET /auth/me`; logout calls the API and clears state.
 11. **MinIO** runs in dev compose but nothing uses it yet — don't "clean it up"; it's reserved for build artifacts/logs.
@@ -54,11 +52,14 @@ The full phased roadmap with design notes and ready-to-paste agent prompts lives
 
 - **Phase 0 done**; **Phase 1 done** — [001-auth-sessions](specs/001-auth-sessions.md) implemented and verified. Auth is no longer a blocker.
 - **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs — see PLAN.md Phase 2 for what shipped).
-- **Phase 3 done** — [003-build-pipeline](specs/003-build-pipeline.md) implemented and verified: create service enqueues a real build job; worker clones, builds, tags, and persists logs.
-- **Now → Phase 4** — run containers + Caddy routing. Draft [004-run-and-route](specs/004-run-and-route.md) from PLAN.md Phase 4 design notes, get owner approval, then implement.
-- Then phases 5–7: service detail/logs → GitHub webhook → prod hardening.
+- **Phase 3 done** — [003-build-pipeline](specs/003-build-pipeline.md) implemented and verified.
+- **Phase 4 done** — [004-run-and-route](specs/004-run-and-route.md) implemented and verified: deploy worker runs containers, manages Docker network, and wires Caddy routes; `start`/`stop`/`DELETE` endpoints added.
+- **Now → Phase 5** — service detail page with jobs, logs, and actions. Draft [005-service-detail](specs/005-service-detail.md) from PLAN.md Phase 5 design notes, get owner approval, then implement.
+- Then phases 6–7: GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-08-05 (Phase 4 run & route — spec 004 done)** — Implemented container runtime and Caddy routing. Added `services.port` column and migration `0003_nifty_vector.sql`. Added `WISP_DOMAIN` and `CADDY_ADMIN_URL` config; exposed Caddy admin `:2019` and added shared `wisp-net` Docker network in dev/prod compose. Implemented `CaddyEngine` (idempotent add/remove reverse-proxy routes) and `RunService` (create/start/stop/remove/redeploy containers on `wisp-net`). Added `QueueService.addDeployJob` and real `deploy.worker.ts` that runs `wisp/<slug>:latest` after a successful build. Updated `build.worker.ts` to detect port from image `ExposedPorts` and enqueue deploy. Added `POST /deploy/:id/start`, `POST /deploy/:id/stop`, and `DELETE /deploy/:id` endpoints with ownership. Added unit tests for `RunService` and `CaddyEngine`, and integration tests for start/stop/delete. `createDeployRoutes` now accepts an optional `RunService` for testability. All gates green: `lint`, `check-types`, `test` (36 core + 8 dashboard), `build`.
 
 - **2026-08-05 (Phase 3 build pipeline — spec 003 done)** — Implemented real git-clone → docker-build job flow. Added `WORK_DIR` config and `build-data` volume in `infra/docker/prod.yml`. Refactored `BuildService` with injectable `exec`/`docker` boundaries; it shallow-clones repos, requires a root `Dockerfile`, builds via `dockerode`, captures build logs, tags `wisp/<slug>:<jobId>` and `wisp/<slug>:latest`, and cleans the workdir. Updated `DeployService.create` to insert a `jobs` row and enqueue via `QueueService`. Updated `build.worker.ts` to update `jobs`/`services` status (`pending → building → success|failed|error`). Wired the build worker into `src/index.ts` with graceful `SIGTERM`/`SIGINT` shutdown. Added `GET /deploy/:id/jobs` with ownership checks. Made the queue service injectable via `queuePlugin`/`createDeployRoutes(queueService)` so integration tests can mock it. Added `lazyConnect: true` to Redis to avoid spurious connections in tests. Added dashboard `DeployService.getJobs()`. Added backend unit tests for `BuildService` and integration tests for job creation and the `/deploy/:id/jobs` endpoint. Verified all gates green: `bun run lint`, `bun run check-types`, `bun run test`.
 
