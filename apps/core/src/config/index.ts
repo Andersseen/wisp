@@ -10,6 +10,7 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32),
   SESSION_COOKIE_NAME: z.string().default('sessionId'),
   SESSION_MAX_AGE_MS: z.coerce.number().default(7 * 24 * 60 * 60 * 1000),
+  WORK_DIR: z.string().default('./data/builds'),
 })
 
 const parsed = envSchema.safeParse(process.env)

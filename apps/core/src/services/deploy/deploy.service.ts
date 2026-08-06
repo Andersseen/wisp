@@ -1,11 +1,15 @@
-import { type InsertService, services } from '@wisp/db'
-import { eq } from 'drizzle-orm'
+import { type InsertService, jobs, services } from '@wisp/db'
+import { desc, eq } from 'drizzle-orm'
 import type { DatabaseClient } from '../../plugins/db'
 import { ConflictError, NotFoundError } from '../../types/error'
 import { generateId } from '../../utils/id'
+import type { QueueService } from '../queue/queue.service'
 
 export class DeployService {
-  constructor(private db: DatabaseClient) {}
+  constructor(
+    private db: DatabaseClient,
+    private queueService?: QueueService,
+  ) {}
 
   async create(data: InsertService & { userId: string }): Promise<{ id: string }> {
     const existing = await this.db.select().from(services).where(eq(services.slug, data.slug)).get()
@@ -24,6 +28,18 @@ export class DeployService {
       userId: data.userId,
     })
 
+    const jobId = generateId(15)
+    await this.db.insert(jobs).values({
+      id: jobId,
+      type: 'build',
+      status: 'pending',
+      serviceId: id,
+    })
+
+    if (this.queueService) {
+      void this.queueService.addBuildJob(id, data.slug, data.gitUrl, data.branch ?? 'main', jobId)
+    }
+
     return { id }
   }
 
@@ -39,5 +55,14 @@ export class DeployService {
     }
 
     return service
+  }
+
+  async getJobsByServiceId(serviceId: string) {
+    return this.db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.serviceId, serviceId))
+      .orderBy(desc(jobs.createdAt))
+      .all()
   }
 }

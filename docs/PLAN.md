@@ -13,9 +13,9 @@ A user can: register → log in → create a service from a git URL → Wisp bui
 | Phase | Deliverable | Spec | Size (agent sessions) |
 |---|---|---|---|
 | 0 | Repo boots, greens, quick repairs | — (small fixes, no spec needed) | 1 |
-| 1 | Working auth sessions | [001](specs/001-auth-sessions.md) (drafted) | 1–2 |
-| 2 | Dashboard shell (real web base) | 002 (to draft) | 1 |
-| 3 | Build pipeline (clone → docker build → jobs) | 003 (to draft) | 2 |
+| 1 | Working auth sessions | [001](specs/001-auth-sessions.md) (done) | 1–2 |
+| 2 | Dashboard shell (real web base) | 002 (done, owner-directed) | 1 |
+| 3 | Build pipeline (clone → docker build → jobs) | [003](specs/003-build-pipeline.md) (done) | 2 |
 | 4 | Run containers + Caddy routing | 004 (to draft) | 2 |
 | 5 | Service detail: status, jobs, logs, actions | 005 (to draft) | 1–2 |
 | 6 | GitHub webhook auto-deploy | 006 (to draft) | 1 |
@@ -81,7 +81,7 @@ scope. Update the spec checkboxes and docs/STATE.md when done.
 
 ---
 
-## Phase 3 — Build pipeline
+## Phase 3 — Build pipeline — **DONE 2026-08-06**
 
 **Goal:** a created service actually gets built: git clone → `docker build` → image tagged, with progress persisted to the `jobs` table.
 

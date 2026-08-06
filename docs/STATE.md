@@ -1,12 +1,12 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-07-29 (critical cleanup checkpoint).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-08-06 (build pipeline implemented).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
-The project is a **well-structured skeleton with working auth sessions**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **The build/deploy pipeline (git clone, docker build, container run, Caddy routing, webhooks) is still TODO stubs.** Build features in the priority order below.
+The project is a **well-structured skeleton with working auth sessions and a real build pipeline**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **Creating a service now triggers a real git clone + docker build via BullMQ, with progress persisted in the `jobs` table.** The container run + Caddy routing (Phase 4) is still TODO. Build features in the priority order below.
 
-**Phase 0 and Phase 1 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth now issues real session cookies, protected routes enforce ownership, and the dashboard persists sessions across reloads.
+**Phase 0, 1, 2, and 3 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth issues real session cookies, protected routes enforce ownership, the dashboard persists sessions across reloads, and creating a service enqueues a build job that clones, builds, and tags a Docker image.
 
 ## What works
 
@@ -18,16 +18,16 @@ The project is a **well-structured skeleton with working auth sessions**. Monore
 - **Protected deploy routes**: `POST /deploy`, `GET /deploy`, and `GET /deploy/:id` all require an active session; `GET /deploy/:id` checks ownership and returns 403 for other users' services.
 - Dashboard: **Angular 21 (zoneless) + Tailwind CSS 4 + owner's own UI stack** — `@voltui/components`, `lumen-icons`, `angular-movement`, `quartz-headless`. App shell with sticky header, auth-aware nav, dark-mode toggle; card-based login/register; services list with skeleton/empty/badges; create-service form; terminal-style logs page; route titles + 404. Production build ~464 kB initial / ~112 kB transfer.
 - Dashboard auth wiring: `AuthService.fetchMe()` restores the session on app boot; `ApiService` sends credentials; `authInterceptor` redirects to `/auth/login` on 401 (without looping on logout/auth-check); `authGuard` protects `/deploy`; the header shows the logged-in user's email and logout works.
-- Tests: backend unit + integration tests for auth and deploy (15/15 passing in `apps/core`); dashboard `AuthService` unit tests + `LoginComponent` tests (8/8 passing in `apps/dashboard`); Playwright e2e auth/deploy tests pass on Chromium (Firefox/WebKit require `npx playwright install`).
+- Tests: backend unit + integration tests for auth, deploy, and build (22/22 passing in `apps/core`); dashboard `AuthService` unit tests + `LoginComponent` tests (8/8 passing in `apps/dashboard`); Playwright e2e auth/deploy tests pass on Chromium (Firefox/WebKit require `npx playwright install`).
+- **Build pipeline (spec 003)**: `POST /deploy` creates a service + inserts a `build` job + enqueues via BullMQ. `BuildService` does real `git clone --depth 1` + `docker build` via dockerode, tags image as `wisp/<slug>:<jobId>` and `wisp/<slug>:latest`. Worker instantiated in `src/index.ts` with graceful shutdown. `GET /deploy/:id/jobs` returns job history with auth + ownership. Service status transitions: `pending → building → error` (on failure); `running` arrives in Phase 4. Bug #6 (queue name mismatch) resolved.
+- **Valkey plugin**: lazy Redis connection via Proxy — only connects when first accessed, with retry strategy (max 3 retries). `QueueService.addBuildJob` catches enqueue errors gracefully and logs them.
 - Open-source hardening kit, shared `@wisp/ui` library, demo landing page, and release automation all remain in place and green.
 
 ## Stubs (files that pretend to work but don't)
 
 | File | Reality |
 |---|---|
-| `apps/core/src/services/deploy/build.service.ts` | Returns fake success; no git clone, no docker build |
 | `apps/core/src/engine/caddy.engine.ts` | `addRoute`/`removeRoute` throw `Not implemented` |
-| `apps/core/src/queue/deploy.worker.ts` | Returns `{ deployed }` without deploying |
 | `apps/core/src/routes/webhook.routes.ts` | Echoes payload; no signature check, no build trigger |
 | `apps/dashboard/.../logs/logs.component.ts` | Shows "No logs available." — no API call (no logs endpoint exists yet) |
 
@@ -38,7 +38,7 @@ The project is a **well-structured skeleton with working auth sessions**. Monore
 3. ~~Misleading field name~~ **Fixed 2026-07-08**: register API body uses `password`; `hashedPassword` is no longer accepted.
 4. ~~Wrong error type in deploy routes~~ **Fixed 2026-07-07**: `deploy.routes.ts` throws `UnauthorizedError`; integration test asserts 401 on both `POST /deploy` and `GET /deploy`.
 5. ~~No ownership check~~ **Fixed 2026-07-08**: `GET /deploy/:id` is auth-protected and returns 403 if the service does not belong to the current user.
-6. **Queue name mismatch / dead consumers**: `QueueService` produces only to queue `'build'`; `deploy.worker.ts` listens on `'deploy'` (no producer); **no worker is ever instantiated in `src/index.ts`**, so no job would be processed at all.
+6. ~~Queue name mismatch / dead consumers~~ **Fixed 2026-08-06 (spec 003)**: `QueueService` produces to queue `'build'`; `build.worker.ts` (renamed from `deploy.worker.ts`) listens on `'build'`; worker is instantiated in `src/index.ts` with graceful shutdown on SIGTERM/SIGINT.
 7. ~~Duplicate worker implementations~~ **Fixed 2026-07-07**: deleted `services/queue/worker.service.ts` (the unused class); kept the `queue/*.worker.ts` factory-style convention.
 8. **Backend won't boot without `.env`**: `SESSION_SECRET` (≥32 chars) is required by `config/index.ts`. Copy `.env.example` to repo-root `.env` — `apps/core/.env` is a symlink to it (see trap #12). New env vars `SESSION_COOKIE_NAME` and `SESSION_MAX_AGE_MS` have sensible defaults.
 9. ~~Formatter trap~~ **Fixed 2026-07-07**: `biome.json` pins `javascript.formatter.quoteStyle: "single"` and `semicolons: "asNeeded"`; `bun run lint` no longer wants to rewrite the whole repo.
@@ -53,12 +53,15 @@ The project is a **well-structured skeleton with working auth sessions**. Monore
 
 The full phased roadmap with design notes and ready-to-paste agent prompts lives in **[PLAN.md](PLAN.md)**. Current position:
 
-- **Phase 0 done**; **Phase 1 done** — [001-auth-sessions](specs/001-auth-sessions.md) implemented and verified. Auth is no longer a blocker.
-- **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs — see PLAN.md Phase 2 for what shipped).
-- **Now → Phase 3** — build pipeline (clone → docker build → jobs). Draft [003-build-pipeline](specs/003-build-pipeline.md) from PLAN.md Phase 3 design notes, get owner approval, then implement.
-- Then phases 4–7: run+Caddy routing → service detail/logs → GitHub webhook → prod hardening.
+- **Phase 0 done**; **Phase 1 done** — [001-auth-sessions](specs/001-auth-sessions.md) implemented and verified.
+- **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs).
+- **Phase 3 done** — [003-build-pipeline](specs/003-build-pipeline.md) implemented and verified. Build pipeline is real: git clone → docker build → jobs table.
+- **Now → Phase 4** — run containers + Caddy routing. Draft [004-run-and-route](specs/004-run-and-route.md) from PLAN.md Phase 4 design notes, get owner approval, then implement.
+- Then phases 5–7: service detail/logs → GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-08-06 (build pipeline — spec 003 done)** — Implemented Phase 3 build pipeline. `BuildService` does real `git clone --depth 1` + `docker build` via dockerode, tags images as `wisp/<slug>:<jobId>` and `wisp/<slug>:latest`. `POST /deploy` now creates service + inserts build job + enqueues via BullMQ. Renamed `deploy.worker.ts` → `build.worker.ts` listening on queue `'build'` (fixes bug #6). Worker instantiated in `src/index.ts` with graceful shutdown on SIGTERM/SIGINT. New endpoint `GET /deploy/:id/jobs` with auth + ownership. Added `WORK_DIR` config. Valkey plugin made lazy via Proxy with retry strategy. `QueueService.addBuildJob` catches enqueue errors gracefully. 22/22 backend tests pass (added BuildService unit tests, DeployService job creation tests, jobs endpoint integration tests). Verified `bun run lint`, `bun run check-types`, `bun run test` green.
 
 - **2026-07-29 (GitHub presentation pass)** — Improved repository presentation for contributors: refreshed `README.md` with a stronger first impression, status table, roadmap, contribution entry points, recommended topics, and the existing Open Graph image; expanded `.github/settings.yml` with About metadata, topics, Discussions, and a contributor-friendly label taxonomy; added a spec-task issue template and improved bug/feature forms with area/status guidance. Verified `bun run lint` and `git diff --check` green.
 

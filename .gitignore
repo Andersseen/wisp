@@ -22,6 +22,9 @@ node_modules
 *.db-wal
 *.db-shm
 
+# Build pipeline working directory
+data/builds/
+
 # Testing
 coverage
 

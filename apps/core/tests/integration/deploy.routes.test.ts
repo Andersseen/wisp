@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test'
+import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { join } from 'node:path'
 import { createDbClient } from '@wisp/db'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
@@ -7,12 +7,27 @@ import { errorHandlerPlugin } from '../../src/plugins/error-handler'
 import { authRoutes } from '../../src/routes/auth.routes'
 import { deployRoutes } from '../../src/routes/deploy.routes'
 
+function createMockRedis() {
+  return {
+    on: mock(() => {}),
+    quit: mock(() => Promise.resolve()),
+    disconnect: mock(() => {}),
+  }
+}
+
 function createTestApp() {
   const db = createDbClient(':memory:')
   migrate(db, { migrationsFolder: join(import.meta.dir, '../../../../packages/db/migrations') })
   const dbPlugin = new Elysia({ name: 'db' }).decorate('db', db)
+  const mockRedis = createMockRedis()
+  const valkeyPlugin = new Elysia({ name: 'valkey' }).decorate('redis', mockRedis)
 
-  return new Elysia().use(errorHandlerPlugin).use(dbPlugin).use(authRoutes).use(deployRoutes)
+  return new Elysia()
+    .use(errorHandlerPlugin)
+    .use(dbPlugin)
+    .use(valkeyPlugin)
+    .use(authRoutes)
+    .use(deployRoutes)
 }
 
 function extractSessionCookie(response: Response): string | undefined {
@@ -130,5 +145,69 @@ describe('Deploy Routes', () => {
     )
 
     expect(response.status).toBe(403)
+  })
+
+  it('returns jobs for a service when authenticated with ownership', async () => {
+    const cookie = await registerAndLogin(app, 'owner@wisp.sh', 'password123')
+
+    const createResponse = await app.handle(
+      new Request('http://localhost/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({
+          name: 'Test',
+          slug: 'test',
+          gitUrl: 'https://github.com/example/repo.git',
+        }),
+      }),
+    )
+
+    const { id } = (await createResponse.json()) as { id: string }
+
+    const response = await app.handle(
+      new Request(`http://localhost/deploy/${id}/jobs`, {
+        headers: { Cookie: cookie },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    const jobs = (await response.json()) as Array<{ type: string; status: string }>
+    expect(jobs).toBeArray()
+    expect(jobs.length).toBe(1)
+    expect(jobs[0]?.type).toBe('build')
+    expect(jobs[0]?.status).toBe('pending')
+  })
+
+  it('returns 403 for jobs endpoint when not owner', async () => {
+    const ownerCookie = await registerAndLogin(app, 'owner@wisp.sh', 'password123')
+
+    const createResponse = await app.handle(
+      new Request('http://localhost/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: ownerCookie },
+        body: JSON.stringify({
+          name: 'Test',
+          slug: 'test',
+          gitUrl: 'https://github.com/example/repo.git',
+        }),
+      }),
+    )
+
+    const { id } = (await createResponse.json()) as { id: string }
+
+    const attackerCookie = await registerAndLogin(app, 'attacker@wisp.sh', 'password123')
+
+    const response = await app.handle(
+      new Request(`http://localhost/deploy/${id}/jobs`, {
+        headers: { Cookie: attackerCookie },
+      }),
+    )
+
+    expect(response.status).toBe(403)
+  })
+
+  it('returns 401 for jobs endpoint when unauthenticated', async () => {
+    const response = await app.handle(new Request('http://localhost/deploy/1/jobs'))
+    expect(response.status).toBe(401)
   })
 })
