@@ -2,9 +2,11 @@ import { jobs, services } from '@wisp/db'
 import { Worker } from 'bullmq'
 import { eq } from 'drizzle-orm'
 import type { Redis } from 'ioredis'
+import type { ContainerEngine } from '../engine/container.engine'
 import type { DatabaseClient } from '../plugins/db'
 import { logger } from '../plugins/logger'
 import type { BuildService } from '../services/deploy/build.service'
+import type { QueueService } from '../services/queue/queue.service'
 
 interface BuildJobData {
   serviceId: string
@@ -18,6 +20,8 @@ export function createBuildWorker(
   redis: Redis,
   buildService: BuildService,
   db: DatabaseClient,
+  queueService: QueueService,
+  containerEngine: ContainerEngine,
 ): Worker {
   return new Worker(
     'build',
@@ -48,6 +52,16 @@ export function createBuildWorker(
         .run()
 
       logger.info({ jobId, success: result.success }, 'build job completed')
+
+      if (result.success) {
+        const port = await containerEngine.getImagePort(slug)
+        if (port) {
+          void queueService.addDeployJob(serviceId, slug, port)
+          logger.info({ jobId, serviceId, port }, 'deploy job enqueued')
+        } else {
+          logger.warn({ jobId, serviceId, slug }, 'no port detected from image, skipping deploy')
+        }
+      }
 
       return { success: result.success, jobId }
     },

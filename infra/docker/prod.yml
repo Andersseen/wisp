@@ -3,6 +3,8 @@ services:
     image: valkey/valkey:8.1-alpine
     volumes:
       - valkey-data:/data
+    networks:
+      - wisp-net
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -14,10 +16,13 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "2019:2019"
     volumes:
       - ../caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+    networks:
+      - wisp-net
 
   core:
     build:
@@ -30,9 +35,14 @@ services:
       VALKEY_URL: redis://valkey:6379
       DOCKER_SOCKET: /var/run/docker.sock
       SESSION_SECRET: ${SESSION_SECRET}
+      WISP_DOMAIN: ${WISP_DOMAIN}
+      CADDY_ADMIN_URL: http://caddy:2019
+      DOCKER_NETWORK: wisp-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - sqlite-data:/data
+    networks:
+      - wisp-net
     depends_on:
       valkey:
         condition: service_healthy
@@ -43,8 +53,14 @@ services:
       dockerfile: apps/dashboard/Dockerfile
     environment:
       NODE_ENV: production
+    networks:
+      - wisp-net
     depends_on:
       - core
+
+networks:
+  wisp-net:
+    driver: bridge
 
 volumes:
   valkey-data:

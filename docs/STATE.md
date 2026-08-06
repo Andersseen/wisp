@@ -1,12 +1,12 @@
 # Wisp — Current State
 
-> **Snapshot date: 2026-08-06 (build pipeline implemented).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
+> **Snapshot date: 2026-08-06 (run containers + Caddy routing implemented).** This is the file to load at the start of every session, and to UPDATE at the end of every session (see "How to maintain this file" at the bottom). If code and this file disagree, trust the code and fix this file.
 
 ## TL;DR
 
-The project is a **well-structured skeleton with working auth sessions and a real build pipeline**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **Creating a service now triggers a real git clone + docker build via BullMQ, with progress persisted in the `jobs` table.** The container run + Caddy routing (Phase 4) is still TODO. Build features in the priority order below.
+The project is a **working self-hosted PaaS with end-to-end deploy pipeline**. Monorepo, tooling, CI, DB schema, API shape, dashboard shell, and login/register/deploy list all work end-to-end. **Creating a service now triggers a real git clone + docker build, runs the container, and registers a Caddy route so the app is accessible via `http://<slug>.localhost`.** Service lifecycle (stop/start/delete/redeploy) is fully implemented via API.
 
-**Phase 0, 1, 2, and 3 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth issues real session cookies, protected routes enforce ownership, the dashboard persists sessions across reloads, and creating a service enqueues a build job that clones, builds, and tags a Docker image.
+**Phase 0, 1, 2, 3, and 4 are done**: `bun run lint`, `bun run check-types`, `bun run test`, and `bun run build` all pass green across every package. Auth issues real session cookies, protected routes enforce ownership, the dashboard persists sessions across reloads, creating a service builds a Docker image, runs it as a container, and exposes it through Caddy.
 
 ## What works
 
@@ -20,6 +20,7 @@ The project is a **well-structured skeleton with working auth sessions and a rea
 - Dashboard auth wiring: `AuthService.fetchMe()` restores the session on app boot; `ApiService` sends credentials; `authInterceptor` redirects to `/auth/login` on 401 (without looping on logout/auth-check); `authGuard` protects `/deploy`; the header shows the logged-in user's email and logout works.
 - Tests: backend unit + integration tests for auth, deploy, and build (22/22 passing in `apps/core`); dashboard `AuthService` unit tests + `LoginComponent` tests (8/8 passing in `apps/dashboard`); Playwright e2e auth/deploy tests pass on Chromium (Firefox/WebKit require `npx playwright install`).
 - **Build pipeline (spec 003)**: `POST /deploy` creates a service + inserts a `build` job + enqueues via BullMQ. `BuildService` does real `git clone --depth 1` + `docker build` via dockerode, tags image as `wisp/<slug>:<jobId>` and `wisp/<slug>:latest`. Worker instantiated in `src/index.ts` with graceful shutdown. `GET /deploy/:id/jobs` returns job history with auth + ownership. Service status transitions: `pending → building → error` (on failure); `running` arrives in Phase 4. Bug #6 (queue name mismatch) resolved.
+- **Run containers + Caddy routing (spec 004)**: After a successful build, the deploy worker runs the container (`wisp-<slug>`) and registers a Caddy route via admin API (`:2019`). Service transitions to `running`. New endpoints: `POST /:id/stop`, `POST /:id/start`, `DELETE /:id`, `POST /:id/redeploy` — all with auth + ownership. `ContainerEngine` manages Docker containers (run/stop/start/remove), `CaddyEngine` manages reverse-proxy routes (add/remove). Docker network `wisp-net` created at boot. Port auto-detected from image `ExposedPorts`. Infra updated: Caddy admin API exposed on `:2019`, all services on `wisp-net`. 29/29 backend tests pass.
 - **Valkey plugin**: lazy Redis connection via Proxy — only connects when first accessed, with retry strategy (max 3 retries). `QueueService.addBuildJob` catches enqueue errors gracefully and logs them.
 - Open-source hardening kit, shared `@wisp/ui` library, demo landing page, and release automation all remain in place and green.
 
@@ -27,7 +28,6 @@ The project is a **well-structured skeleton with working auth sessions and a rea
 
 | File | Reality |
 |---|---|
-| `apps/core/src/engine/caddy.engine.ts` | `addRoute`/`removeRoute` throw `Not implemented` |
 | `apps/core/src/routes/webhook.routes.ts` | Echoes payload; no signature check, no build trigger |
 | `apps/dashboard/.../logs/logs.component.ts` | Shows "No logs available." — no API call (no logs endpoint exists yet) |
 
@@ -56,10 +56,13 @@ The full phased roadmap with design notes and ready-to-paste agent prompts lives
 - **Phase 0 done**; **Phase 1 done** — [001-auth-sessions](specs/001-auth-sessions.md) implemented and verified.
 - **Phase 2 done out of order** (owner-directed: dashboard shell built on Angular 21 + Tailwind 4 + owner's UI libs).
 - **Phase 3 done** — [003-build-pipeline](specs/003-build-pipeline.md) implemented and verified. Build pipeline is real: git clone → docker build → jobs table.
-- **Now → Phase 4** — run containers + Caddy routing. Draft [004-run-and-route](specs/004-run-and-route.md) from PLAN.md Phase 4 design notes, get owner approval, then implement.
-- Then phases 5–7: service detail/logs → GitHub webhook → prod hardening.
+- **Phase 4 done** — [004-run-and-route](specs/004-run-and-route.md) implemented and verified. Containers run, Caddy routes registered, service lifecycle (stop/start/delete/redeploy) works.
+- **Now → Phase 5** — service detail page in dashboard (status, jobs, logs, actions). Draft [005-service-detail](specs/005-service-detail.md) from PLAN.md Phase 5 design notes, get owner approval, then implement.
+- Then phases 6–7: GitHub webhook → prod hardening.
 
 ## Session changelog (append newest first)
+
+- **2026-08-06 (run containers + Caddy routing — spec 004 done)** — Implemented Phase 4. `CaddyEngine` manages reverse-proxy routes via Caddy admin API (`:2019`). `ContainerEngine` manages Docker containers (run/stop/start/remove) on `wisp-net` network. Deploy worker runs containers after successful build and registers Caddy routes. New endpoints: `POST /:id/stop`, `POST /:id/start`, `DELETE /:id`, `POST /:id/redeploy` — all with auth + ownership. Port auto-detected from image `ExposedPorts`. Schema: `port` column added to `services` (migration `0003`). Infra: Caddy admin API exposed on `:2019`, all services on `wisp-net` bridge network. 29/29 backend tests pass (added 7 new integration tests for action endpoints). Verified `bun run lint`, `bun run check-types`, `bun run test` green.
 
 - **2026-08-06 (build pipeline — spec 003 done)** — Implemented Phase 3 build pipeline. `BuildService` does real `git clone --depth 1` + `docker build` via dockerode, tags images as `wisp/<slug>:<jobId>` and `wisp/<slug>:latest`. `POST /deploy` now creates service + inserts build job + enqueues via BullMQ. Renamed `deploy.worker.ts` → `build.worker.ts` listening on queue `'build'` (fixes bug #6). Worker instantiated in `src/index.ts` with graceful shutdown on SIGTERM/SIGINT. New endpoint `GET /deploy/:id/jobs` with auth + ownership. Added `WORK_DIR` config. Valkey plugin made lazy via Proxy with retry strategy. `QueueService.addBuildJob` catches enqueue errors gracefully. 22/22 backend tests pass (added BuildService unit tests, DeployService job creation tests, jobs endpoint integration tests). Verified `bun run lint`, `bun run check-types`, `bun run test` green.
 

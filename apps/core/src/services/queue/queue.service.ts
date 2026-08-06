@@ -4,9 +4,14 @@ import { logger } from '../../plugins/logger'
 
 export class QueueService {
   private buildQueue: Queue
+  private deployQueue: Queue
 
   constructor(redis: Redis) {
     this.buildQueue = new Queue('build', {
+      connection: redis,
+      defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
+    })
+    this.deployQueue = new Queue('deploy', {
       connection: redis,
       defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
     })
@@ -24,6 +29,16 @@ export class QueueService {
       return job.id ?? ''
     } catch (err) {
       logger.error({ err, serviceId, jobId }, 'failed to enqueue build job')
+      return ''
+    }
+  }
+
+  async addDeployJob(serviceId: string, slug: string, port: number): Promise<string> {
+    try {
+      const job = await this.deployQueue.add('deploy', { serviceId, slug, port })
+      return job.id ?? ''
+    } catch (err) {
+      logger.error({ err, serviceId, slug }, 'failed to enqueue deploy job')
       return ''
     }
   }

@@ -210,4 +210,130 @@ describe('Deploy Routes', () => {
     const response = await app.handle(new Request('http://localhost/deploy/1/jobs'))
     expect(response.status).toBe(401)
   })
+
+  it('returns 401 for stop endpoint when unauthenticated', async () => {
+    const response = await app.handle(
+      new Request('http://localhost/deploy/1/stop', { method: 'POST' }),
+    )
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 401 for start endpoint when unauthenticated', async () => {
+    const response = await app.handle(
+      new Request('http://localhost/deploy/1/start', { method: 'POST' }),
+    )
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 401 for delete endpoint when unauthenticated', async () => {
+    const response = await app.handle(
+      new Request('http://localhost/deploy/1', { method: 'DELETE' }),
+    )
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 401 for redeploy endpoint when unauthenticated', async () => {
+    const response = await app.handle(
+      new Request('http://localhost/deploy/1/redeploy', { method: 'POST' }),
+    )
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 403 for stop endpoint when not owner', async () => {
+    const ownerCookie = await registerAndLogin(app, 'owner@wisp.sh', 'password123')
+
+    const createResponse = await app.handle(
+      new Request('http://localhost/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: ownerCookie },
+        body: JSON.stringify({
+          name: 'Test',
+          slug: 'test',
+          gitUrl: 'https://github.com/example/repo.git',
+        }),
+      }),
+    )
+
+    const { id } = (await createResponse.json()) as { id: string }
+
+    const attackerCookie = await registerAndLogin(app, 'attacker@wisp.sh', 'password123')
+
+    const response = await app.handle(
+      new Request(`http://localhost/deploy/${id}/stop`, {
+        method: 'POST',
+        headers: { Cookie: attackerCookie },
+      }),
+    )
+
+    expect(response.status).toBe(403)
+  })
+
+  it('returns 403 for delete endpoint when not owner', async () => {
+    const ownerCookie = await registerAndLogin(app, 'owner@wisp.sh', 'password123')
+
+    const createResponse = await app.handle(
+      new Request('http://localhost/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: ownerCookie },
+        body: JSON.stringify({
+          name: 'Test',
+          slug: 'test',
+          gitUrl: 'https://github.com/example/repo.git',
+        }),
+      }),
+    )
+
+    const { id } = (await createResponse.json()) as { id: string }
+
+    const attackerCookie = await registerAndLogin(app, 'attacker@wisp.sh', 'password123')
+
+    const response = await app.handle(
+      new Request(`http://localhost/deploy/${id}`, {
+        method: 'DELETE',
+        headers: { Cookie: attackerCookie },
+      }),
+    )
+
+    expect(response.status).toBe(403)
+  })
+
+  it('redeploy creates a new build job', async () => {
+    const cookie = await registerAndLogin(app, 'owner@wisp.sh', 'password123')
+
+    const createResponse = await app.handle(
+      new Request('http://localhost/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({
+          name: 'Test',
+          slug: 'test',
+          gitUrl: 'https://github.com/example/repo.git',
+        }),
+      }),
+    )
+
+    const { id } = (await createResponse.json()) as { id: string }
+
+    const redeployResponse = await app.handle(
+      new Request(`http://localhost/deploy/${id}/redeploy`, {
+        method: 'POST',
+        headers: { Cookie: cookie },
+      }),
+    )
+
+    expect(redeployResponse.status).toBe(200)
+    const { jobId } = (await redeployResponse.json()) as { jobId: string }
+    expect(jobId).toBeString()
+
+    const jobsResponse = await app.handle(
+      new Request(`http://localhost/deploy/${id}/jobs`, {
+        headers: { Cookie: cookie },
+      }),
+    )
+
+    const jobs = (await jobsResponse.json()) as Array<{ type: string; status: string }>
+    expect(jobs.length).toBe(2)
+    expect(jobs[0]?.type).toBe('build')
+    expect(jobs[0]?.status).toBe('pending')
+  })
 })

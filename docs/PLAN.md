@@ -16,7 +16,7 @@ A user can: register → log in → create a service from a git URL → Wisp bui
 | 1 | Working auth sessions | [001](specs/001-auth-sessions.md) (done) | 1–2 |
 | 2 | Dashboard shell (real web base) | 002 (done, owner-directed) | 1 |
 | 3 | Build pipeline (clone → docker build → jobs) | [003](specs/003-build-pipeline.md) (done) | 2 |
-| 4 | Run containers + Caddy routing | 004 (to draft) | 2 |
+| 4 | Run containers + Caddy routing | [004](specs/004-run-and-route.md) (done) | 2 |
 | 5 | Service detail: status, jobs, logs, actions | 005 (to draft) | 1–2 |
 | 6 | GitHub webhook auto-deploy | 006 (to draft) | 1 |
 | 7 | Production hardening + install | 007 (to draft) | 1–2 |
@@ -105,7 +105,7 @@ owner approval before implementing.
 
 ---
 
-## Phase 4 — Run containers & Caddy routing
+## Phase 4 — Run containers & Caddy routing — **DONE 2026-08-06**
 
 **Goal:** built images run as containers and are reachable via `http://<slug>.localhost` (dev) / `https://<slug>.<domain>` (prod).
 

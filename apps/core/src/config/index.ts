@@ -11,6 +11,9 @@ const envSchema = z.object({
   SESSION_COOKIE_NAME: z.string().default('sessionId'),
   SESSION_MAX_AGE_MS: z.coerce.number().default(7 * 24 * 60 * 60 * 1000),
   WORK_DIR: z.string().default('./data/builds'),
+  WISP_DOMAIN: z.string().default('localhost'),
+  CADDY_ADMIN_URL: z.string().default('http://localhost:2019'),
+  DOCKER_NETWORK: z.string().default('wisp-net'),
 })
 
 const parsed = envSchema.safeParse(process.env)

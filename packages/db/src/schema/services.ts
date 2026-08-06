@@ -11,6 +11,7 @@ export const services = sqliteTable(
     slug: text('slug').notNull().unique(),
     gitUrl: text('git_url').notNull(),
     branch: text('branch').default('main'),
+    port: integer('port'),
     status: text('status', {
       enum: ['pending', 'building', 'running', 'stopped', 'error'],
     }).default('pending'),
