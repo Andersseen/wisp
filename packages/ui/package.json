@@ -29,6 +29,6 @@
     "@angular/compiler-cli": "^21.2.0",
     "@wisp/typescript-config": "workspace:*",
     "ng-packagr": "^21.2.5",
-    "typescript": "~5.9.0"
+    "typescript": "~7.0.2"
   }
 }

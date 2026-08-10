@@ -22,6 +22,6 @@
     "better-sqlite3": "^12.11.1",
     "bun-types": "^1.2.0",
     "drizzle-kit": "^0.30.0",
-    "typescript": "~5.9.0"
+    "typescript": "~7.0.2"
   }
 }
