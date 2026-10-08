@@ -336,4 +336,37 @@ describe('Deploy Routes', () => {
     expect(jobs[0]?.type).toBe('build')
     expect(jobs[0]?.status).toBe('pending')
   })
+
+  it('returns 401 for logs endpoint when unauthenticated', async () => {
+    const response = await app.handle(new Request('http://localhost/deploy/1/logs'))
+    expect(response.status).toBe(401)
+  })
+
+  it('returns 403 for logs endpoint when not owner', async () => {
+    const ownerCookie = await registerAndLogin(app, 'owner@wisp.sh', 'password123')
+
+    const createResponse = await app.handle(
+      new Request('http://localhost/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: ownerCookie },
+        body: JSON.stringify({
+          name: 'Test',
+          slug: 'test',
+          gitUrl: 'https://github.com/example/repo.git',
+        }),
+      }),
+    )
+
+    const { id } = (await createResponse.json()) as { id: string }
+
+    const attackerCookie = await registerAndLogin(app, 'attacker@wisp.sh', 'password123')
+
+    const response = await app.handle(
+      new Request(`http://localhost/deploy/${id}/logs`, {
+        headers: { Cookie: attackerCookie },
+      }),
+    )
+
+    expect(response.status).toBe(403)
+  })
 })

@@ -79,6 +79,22 @@ export const deployRoutes = new Elysia({ prefix: '/deploy' })
     await checkOwnership(service, params.id, user.id)
     return service.getJobsByServiceId(params.id)
   })
+  .get(
+    '/:id/logs',
+    async ({ params, query, db, redis, user }) => {
+      if (!user) throw new UnauthorizedError()
+      const service = buildDeployService(db, redis, true)
+      await checkOwnership(service, params.id, user.id)
+      const lines = Math.min(Math.max(query.lines ?? 200, 1), 1000)
+      const logs = await service.getContainerLogs(params.id, lines)
+      return { logs }
+    },
+    {
+      query: t.Object({
+        lines: t.Optional(t.Numeric({ default: 200 })),
+      }),
+    },
+  )
   .post('/:id/stop', async ({ params, db, redis, user }) => {
     if (!user) throw new UnauthorizedError()
     const service = buildDeployService(db, redis, true)

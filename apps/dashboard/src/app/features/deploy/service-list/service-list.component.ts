@@ -2,20 +2,11 @@ import { ChangeDetectionStrategy, Component, type OnInit, inject, signal } from 
 import { RouterLink } from '@angular/router'
 import { VoltBadge, VoltButton, VoltCard, VoltSkeleton } from '@voltui/components'
 import { MOVEMENT_DIRECTIVES } from 'angular-movement'
-import { LmnCommandLineIcon } from 'lumen-icons/command-line'
 import { LmnCubeIcon } from 'lumen-icons/cube'
 import { LmnPlusIcon } from 'lumen-icons/plus'
 import { LmnRocketLaunchIcon } from 'lumen-icons/rocket-launch'
 import { ApiService } from '../../../core/api.service'
-
-export interface Service {
-  id: string
-  name: string
-  slug: string
-  status: string
-  gitUrl: string
-  branch?: string
-}
+import type { Service } from '../types'
 
 type BadgeVariant = 'solid' | 'secondary' | 'outline' | 'destructive'
 
@@ -38,7 +29,6 @@ const STATUS_BADGES: Record<string, BadgeVariant> = {
     MOVEMENT_DIRECTIVES,
     LmnPlusIcon,
     LmnCubeIcon,
-    LmnCommandLineIcon,
     LmnRocketLaunchIcon,
   ],
   template: `
@@ -114,10 +104,9 @@ const STATUS_BADGES: Record<string, BadgeVariant> = {
                   <volt-badge [variant]="badgeVariant(service.status)">
                     {{ service.status }}
                   </volt-badge>
-                  <a [routerLink]="[service.id, 'logs']">
+                  <a [routerLink]="[service.id]">
                     <volt-button variant="ghost" size="sm">
-                      <lmn-command-line [size]="16" />
-                      Logs
+                      Details
                     </volt-button>
                   </a>
                 </div>

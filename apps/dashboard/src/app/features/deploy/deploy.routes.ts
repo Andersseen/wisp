@@ -14,8 +14,9 @@ export const deployRoutes: Routes = [
       import('./service-create/service-create.component').then((m) => m.ServiceCreateComponent),
   },
   {
-    path: ':id/logs',
-    title: 'Logs — Wisp',
-    loadComponent: () => import('./logs/logs.component').then((m) => m.LogsComponent),
+    path: ':id',
+    title: 'Service detail — Wisp',
+    loadComponent: () =>
+      import('./service-detail/service-detail.component').then((m) => m.ServiceDetailComponent),
   },
 ]

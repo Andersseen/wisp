@@ -147,4 +147,14 @@ export class DeployService {
 
     return { jobId }
   }
+
+  async getContainerLogs(id: string, lines: number): Promise<string> {
+    const service = await this.getById(id)
+
+    if (!this.engines?.containerEngine) {
+      throw new ValidationError('Container engine not configured')
+    }
+
+    return this.engines.containerEngine.getLogs(service.slug, lines)
+  }
 }

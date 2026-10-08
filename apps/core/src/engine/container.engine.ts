@@ -114,4 +114,26 @@ export class ContainerEngine {
       return null
     }
   }
+
+  async getLogs(slug: string, lines: number): Promise<string> {
+    const containerName = `wisp-${slug}`
+
+    try {
+      const container = this.docker.getContainer(containerName)
+      const logs = await container.logs({
+        stdout: true,
+        stderr: true,
+        tail: lines,
+        follow: false,
+      })
+
+      return logs.toString('utf-8')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      if (message.includes('no such container') || message.includes('404')) {
+        return ''
+      }
+      throw err
+    }
+  }
 }
