@@ -31,7 +31,7 @@
   "devDependencies": {
     "@analogjs/platform": "^2.6.2",
     "@angular/compiler-cli": "^21.2.0",
-    "@tailwindcss/postcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.3.3",
     "@wisp/typescript-config": "workspace:*",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.9.0",

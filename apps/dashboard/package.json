@@ -34,7 +34,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@happy-dom/global-registrator": "^20.10.6",
     "@playwright/test": "^1.52.0",
-    "@tailwindcss/postcss": "^4.0.0",
+    "@tailwindcss/postcss": "^4.3.3",
     "@wisp/ui": "workspace:*",
     "@wisp/typescript-config": "workspace:*",
     "bun-types": "^1.2.0",
