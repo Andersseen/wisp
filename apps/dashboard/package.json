@@ -37,7 +37,7 @@
     "@tailwindcss/postcss": "^4.0.0",
     "@wisp/ui": "workspace:*",
     "@wisp/typescript-config": "workspace:*",
-    "bun-types": "^1.2.0",
+    "bun-types": "^1.4.3",
     "playwright": "^1.52.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.9.0"
