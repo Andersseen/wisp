@@ -30,7 +30,7 @@
     "@types/dockerode": "^3.3.37",
     "@types/tar": "^7.0.87",
     "@wisp/typescript-config": "workspace:*",
-    "bun-types": "^1.2.0",
+    "bun-types": "^1.4.3",
     "typescript": "~5.9.0"
   }
 }
